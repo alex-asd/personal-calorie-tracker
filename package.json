@@ -1,0 +1,24 @@
+{
+  "name": "calorie-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted single-user calorie & nutrition tracker.",
+  "scripts": {
+    "dev:server": "node --watch server/index.js",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "concurrently -k -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

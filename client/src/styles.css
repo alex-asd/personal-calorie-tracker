@@ -1,0 +1,180 @@
+:root {
+  --bg: #0f1115;
+  --surface: #181c24;
+  --surface-2: #20252f;
+  --border: #2a3040;
+  --text: #e6e8ee;
+  --muted: #8a90a2;
+  --accent: #5fa8ff;
+  --ok: #4ade80;
+  --warn: #f5b94a;
+  --error: #f87171;
+  --danger: #ef4444;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.session-header .row + .banner {
+  margin-top: 0.75rem;
+}
+
+.banner {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.banner.warning {
+  background: rgba(245, 185, 74, 0.12);
+  color: var(--warn);
+  border: 1px solid rgba(245, 185, 74, 0.4);
+}
+
+.banner.error-banner {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.confirm {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+}
+
+.confirm p {
+  margin: 0 0 0.6rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.form label span {
+  color: var(--muted);
+}
+
+.form input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.4rem;
+  font-size: 1rem;
+}
+
+.form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0a1a2c;
+  font-weight: 600;
+}
+
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+
+.error {
+  color: var(--error);
+  margin: 0;
+}
+
+.ok {
+  color: var(--ok);
+  font-weight: 600;
+}
