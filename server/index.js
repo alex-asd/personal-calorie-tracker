@@ -6,6 +6,7 @@ import { initDb } from './db.js';
 import sessionsRouter from './routes/sessions.js';
 import mealsRouter from './routes/meals.js';
 import savedMealsRouter from './routes/savedMeals.js';
+import exportRouter from './routes/export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -22,6 +23,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/meals', mealsRouter);
 app.use('/api/saved-meals', savedMealsRouter);
+app.use('/api/export', exportRouter);
 
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {

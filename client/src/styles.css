@@ -514,3 +514,19 @@ button.danger {
 .link-back:hover {
   color: var(--accent);
 }
+
+.button-link {
+  display: inline-block;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.95rem;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.button-link:hover {
+  border-color: var(--accent);
+}
