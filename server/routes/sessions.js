@@ -1,6 +1,6 @@
 import express from 'express';
 import { getDb } from '../db.js';
-import { today, daysBetween } from '../dates.js';
+import { today, daysBetween, addDays } from '../dates.js';
 
 const router = express.Router();
 
@@ -83,6 +83,66 @@ router.post('/:id/close', (req, res) => {
 
   const updated = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id);
   res.json({ session: updated });
+});
+
+router.get('/', (req, res) => {
+  const db = getDb();
+  const sessions = db
+    .prepare(
+      `SELECT * FROM sessions WHERE status = 'closed' ORDER BY end_date DESC, id DESC`
+    )
+    .all();
+  for (const s of sessions) {
+    s.day_count = daysBetween(s.start_date, s.end_date) + 1;
+  }
+  res.json({ sessions });
+});
+
+router.get('/:id/days', (req, res) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: 'invalid session id' });
+  }
+
+  const session = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id);
+  if (!session) return res.status(404).json({ error: 'session not found' });
+
+  const endDate = session.end_date || today();
+  const rows = db
+    .prepare(`SELECT date, calories, protein FROM daily_totals WHERE session_id = ?`)
+    .all(id);
+  const byDate = new Map(rows.map((r) => [r.date, r]));
+
+  const days = [];
+  let cursor = endDate;
+  while (cursor >= session.start_date) {
+    const row = byDate.get(cursor);
+    days.push({
+      date: cursor,
+      calories: row ? row.calories : 0,
+      protein: row ? row.protein : 0
+    });
+    cursor = addDays(cursor, -1);
+  }
+
+  res.json({
+    sessionId: id,
+    startDate: session.start_date,
+    endDate: session.end_date,
+    days
+  });
+});
+
+router.get('/:id', (req, res) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'invalid id' });
+
+  const session = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id);
+  if (!session) return res.status(404).json({ error: 'session not found' });
+
+  res.json({ session });
 });
 
 export default router;

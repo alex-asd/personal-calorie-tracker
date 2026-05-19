@@ -6,12 +6,15 @@ import SessionHeader from '../components/SessionHeader.jsx';
 import TodayTotals from '../components/TodayTotals.jsx';
 import MealList from '../components/MealList.jsx';
 import AddMealModal from '../components/AddMealModal.jsx';
+import DayHistoryTable from '../components/DayHistoryTable.jsx';
 
 export default function Home() {
   const { session, loading: sessionLoading, error: sessionError } = useSession();
   const [meals, setMeals] = useState([]);
   const [mealsLoading, setMealsLoading] = useState(false);
   const [mealsError, setMealsError] = useState(null);
+  const [days, setDays] = useState([]);
+  const [daysError, setDaysError] = useState(null);
   const [adding, setAdding] = useState(false);
 
   const refreshMeals = useCallback(async () => {
@@ -31,9 +34,29 @@ export default function Home() {
     }
   }, [session]);
 
+  const refreshDays = useCallback(async () => {
+    if (!session) {
+      setDays([]);
+      return;
+    }
+    setDaysError(null);
+    try {
+      const { days } = await api.get(`/api/sessions/${session.id}/days`);
+      setDays(days);
+    } catch (e) {
+      setDaysError(e.message);
+    }
+  }, [session]);
+
   useEffect(() => {
     refreshMeals();
-  }, [refreshMeals]);
+    refreshDays();
+  }, [refreshMeals, refreshDays]);
+
+  const onMealChange = useCallback(() => {
+    refreshMeals();
+    refreshDays();
+  }, [refreshMeals, refreshDays]);
 
   if (sessionLoading) {
     return (
@@ -47,21 +70,20 @@ export default function Home() {
 
   return (
     <main className="container">
-      <header className="page-header">
-        <h1>Calorie Tracker</h1>
-        {canAdd && (
-          <button className="primary" onClick={() => setAdding(true)}>
-            + Add meal
-          </button>
-        )}
-      </header>
-
       {sessionError && <p className="error">{sessionError}</p>}
 
       {!session && <CreateSessionForm />}
 
       {session && (
         <>
+          <header className="page-header">
+            <h1>Today</h1>
+            {canAdd && (
+              <button className="primary" onClick={() => setAdding(true)}>
+                + Add meal
+              </button>
+            )}
+          </header>
           <SessionHeader />
           <TodayTotals meals={meals} session={session} />
           <MealList
@@ -69,8 +91,10 @@ export default function Home() {
             loading={mealsLoading}
             error={mealsError}
             canEdit={!session.blocked}
-            onChange={refreshMeals}
+            onChange={onMealChange}
           />
+          {daysError && <p className="error">{daysError}</p>}
+          <DayHistoryTable days={days} session={session} />
         </>
       )}
 
@@ -79,7 +103,7 @@ export default function Home() {
           onClose={() => setAdding(false)}
           onAdded={() => {
             setAdding(false);
-            refreshMeals();
+            onMealChange();
           }}
         />
       )}
