@@ -9,7 +9,7 @@ import savedMealsRouter from './routes/savedMeals.js';
 import exportRouter from './routes/export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 8002;
 
 initDb();
 

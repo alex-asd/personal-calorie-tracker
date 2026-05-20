@@ -38,11 +38,11 @@ that isn't `/api/*`.
 npm start
 ```
 
-Server listens on `http://0.0.0.0:3000`. From another machine on your
+Server listens on `http://0.0.0.0:8002`. From another machine on your
 tailnet, open one of:
 
-- `http://<pi-hostname>:3000` (e.g. `http://raspberrypi:3000` if MagicDNS is on)
-- `http://<pi-tailscale-ip>:3000`
+- `http://<pi-hostname>:8002` (e.g. `http://raspberrypi:8002` if MagicDNS is on)
+- `http://<pi-tailscale-ip>:8002`
 
 Stop with Ctrl+C. Use this to confirm everything works before installing
 the service.
@@ -62,7 +62,7 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/calorie-tracker
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=8002
 Environment=DATA_DIR=/var/lib/calorie-tracker
 ExecStart=/usr/bin/node server/index.js
 Restart=on-failure
@@ -143,19 +143,19 @@ above.
 
 | Variable   | Default   | Purpose                                      |
 | ---------- | --------- | -------------------------------------------- |
-| `PORT`     | `3000`    | HTTP port the server binds to                |
+| `PORT`     | `8002`    | HTTP port the server binds to                |
 | `DATA_DIR` | `./data`  | Directory holding `tracker.db` and WAL files |
 
 ## Tailscale access
 
-The server binds to `0.0.0.0:3000`, so it's reachable on any interface the
+The server binds to `0.0.0.0:8002`, so it's reachable on any interface the
 Pi has. With Tailscale running, that includes the tailnet — no port
 forwarding required.
 
-Optional: drop the `:3000` from the URL and add TLS via Tailscale Serve:
+Optional: drop the `:8002` from the URL and add TLS via Tailscale Serve:
 
 ```bash
-sudo tailscale serve --bg http://localhost:3000
+sudo tailscale serve --bg http://localhost:8002
 ```
 
 After that the app is reachable at
