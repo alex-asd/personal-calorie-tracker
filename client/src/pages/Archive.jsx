@@ -21,6 +21,13 @@ function fmtRange(start, end) {
   )}`;
 }
 
+function fmtWeight(start, end) {
+  if (start == null && end == null) return null;
+  if (start != null && end != null) return `${start} → ${end} kg`;
+  if (start != null) return `start ${start} kg`;
+  return `end ${end} kg`;
+}
+
 export default function Archive() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,26 +71,30 @@ export default function Archive() {
 
       {sessions.length > 0 && (
         <ul className="archive-list">
-          {sessions.map((s) => (
-            <li key={s.id}>
-              <Link to={`/archive/${s.id}`} className="archive-item card">
-                <div className="row">
-                  <div>
-                    <div className="archive-title">
-                      {fmtRange(s.start_date, s.end_date)}
+          {sessions.map((s) => {
+            const w = fmtWeight(s.start_weight_kg, s.end_weight_kg);
+            return (
+              <li key={s.id}>
+                <Link to={`/archive/${s.id}`} className="archive-item card">
+                  <div className="row">
+                    <div>
+                      <div className="archive-title">
+                        {fmtRange(s.start_date, s.end_date)}
+                      </div>
+                      <div className="muted small">
+                        {s.day_count} day{s.day_count === 1 ? '' : 's'} ·{' '}
+                        {s.calorie_target} kcal / {s.protein_target}g protein
+                        {w && <> · {w}</>}
+                      </div>
                     </div>
-                    <div className="muted small">
-                      {s.day_count} day{s.day_count === 1 ? '' : 's'} ·{' '}
-                      {s.calorie_target} kcal / {s.protein_target}g protein
+                    <div className="archive-chevron" aria-hidden="true">
+                      ›
                     </div>
                   </div>
-                  <div className="archive-chevron" aria-hidden="true">
-                    ›
-                  </div>
-                </div>
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>

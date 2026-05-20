@@ -74,6 +74,18 @@ export default function SessionDetail() {
               {session.calorie_target} kcal / {session.protein_target}g protein
               {session.status === 'open' && ' · (still open)'}
             </p>
+            {(session.start_weight_kg != null || session.end_weight_kg != null) && (
+              <p className="muted">
+                Weight:{' '}
+                {session.start_weight_kg != null
+                  ? `${session.start_weight_kg} kg`
+                  : '—'}{' '}
+                →{' '}
+                {session.end_weight_kg != null
+                  ? `${session.end_weight_kg} kg`
+                  : '—'}
+              </p>
+            )}
           </section>
           <DayHistoryTable days={days} session={session} showRelative={false} />
         </>

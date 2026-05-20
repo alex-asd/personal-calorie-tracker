@@ -7,6 +7,7 @@ import TodayTotals from '../components/TodayTotals.jsx';
 import MealList from '../components/MealList.jsx';
 import AddMealModal from '../components/AddMealModal.jsx';
 import DayHistoryTable from '../components/DayHistoryTable.jsx';
+import WeightLogger from '../components/WeightLogger.jsx';
 
 export default function Home() {
   const { session, loading: sessionLoading, error: sessionError } = useSession();
@@ -85,6 +86,7 @@ export default function Home() {
             )}
           </header>
           <SessionHeader />
+          <WeightLogger disabled={session.blocked} />
           <TodayTotals meals={meals} session={session} />
           <MealList
             meals={meals}

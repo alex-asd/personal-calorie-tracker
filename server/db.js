@@ -66,9 +66,27 @@ export function initDb() {
       PRIMARY KEY (session_id, date)
     );
 
+    CREATE TABLE IF NOT EXISTS daily_weights (
+      session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      weight_kg REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (session_id, date)
+    );
+
     CREATE UNIQUE INDEX IF NOT EXISTS idx_one_open_session
       ON sessions(status) WHERE status = 'open';
   `);
+
+  const sessionCols = new Set(
+    db.prepare(`PRAGMA table_info(sessions)`).all().map((c) => c.name)
+  );
+  if (!sessionCols.has('start_weight_kg')) {
+    db.exec(`ALTER TABLE sessions ADD COLUMN start_weight_kg REAL`);
+  }
+  if (!sessionCols.has('end_weight_kg')) {
+    db.exec(`ALTER TABLE sessions ADD COLUMN end_weight_kg REAL`);
+  }
 
   return db;
 }

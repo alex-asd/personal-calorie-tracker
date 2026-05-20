@@ -5,10 +5,14 @@ export default function CreateSessionForm() {
   const { createSession } = useSession();
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
+  const [weight, setWeight] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const valid = Number(calories) > 0 && Number(protein) > 0;
+  const valid =
+    Number(calories) > 0 &&
+    Number(protein) > 0 &&
+    (weight === '' || Number(weight) > 0);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -18,7 +22,8 @@ export default function CreateSessionForm() {
     try {
       await createSession({
         calorie_target: Number(calories),
-        protein_target: Number(protein)
+        protein_target: Number(protein),
+        start_weight_kg: weight === '' ? null : Number(weight)
       });
     } catch (err) {
       setError(err.message);
@@ -57,6 +62,17 @@ export default function CreateSessionForm() {
             onChange={(e) => setProtein(e.target.value)}
             placeholder="e.g. 160"
             required
+          />
+        </label>
+        <label>
+          <span>Starting weight (kg) — optional</span>
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="e.g. 75.5"
           />
         </label>
         {error && <p className="error">{error}</p>}

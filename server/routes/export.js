@@ -24,10 +24,17 @@ router.get('/', (req, res) => {
     )
     .all(session.id);
 
+  const dailyWeights = db
+    .prepare(
+      `SELECT date, weight_kg FROM daily_weights WHERE session_id = ? ORDER BY date ASC`
+    )
+    .all(session.id);
+
   const payload = {
     exported_at: new Date().toISOString(),
     session,
     daily_totals: dailyTotals,
+    daily_weights: dailyWeights,
     meals
   };
 

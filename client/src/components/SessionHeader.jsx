@@ -5,20 +5,28 @@ export default function SessionHeader() {
   const { session, closeSession } = useSession();
   const [confirming, setConfirming] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [endWeight, setEndWeight] = useState('');
   const [error, setError] = useState(null);
 
   if (!session) return null;
 
   async function onConfirmClose() {
+    if (endWeight !== '' && !(Number(endWeight) > 0)) {
+      setError('Final weight must be a positive number');
+      return;
+    }
     setClosing(true);
     setError(null);
     try {
-      await closeSession();
+      await closeSession({
+        end_weight_kg: endWeight === '' ? null : Number(endWeight)
+      });
     } catch (e) {
       setError(e.message);
     } finally {
       setClosing(false);
       setConfirming(false);
+      setEndWeight('');
     }
   }
 
@@ -32,6 +40,9 @@ export default function SessionHeader() {
           <p className="muted">
             Started {session.start_date} · {session.calorie_target} kcal /{' '}
             {session.protein_target}g protein
+            {session.start_weight_kg != null && (
+              <> · start {session.start_weight_kg} kg</>
+            )}
           </p>
         </div>
         <div className="actions">
@@ -47,14 +58,33 @@ export default function SessionHeader() {
       {confirming && (
         <div className="confirm">
           <p>
-            Close this session? Meal entries will be deleted; daily totals are preserved
-            in the archive.
+            Close this session? Meal entries and daily weight logs will be deleted;
+            daily totals and start/end weights are preserved in the archive.
           </p>
+          <label>
+            <span>Final weight (kg) — optional</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={endWeight}
+              onChange={(e) => setEndWeight(e.target.value)}
+              placeholder="e.g. 73.0"
+              disabled={closing}
+            />
+          </label>
           <div className="row">
             <button onClick={onConfirmClose} disabled={closing} className="danger">
               {closing ? 'Closing…' : 'Confirm close'}
             </button>
-            <button onClick={() => setConfirming(false)} disabled={closing}>
+            <button
+              onClick={() => {
+                setConfirming(false);
+                setEndWeight('');
+                setError(null);
+              }}
+              disabled={closing}
+            >
               Cancel
             </button>
           </div>

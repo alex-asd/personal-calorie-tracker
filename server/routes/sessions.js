@@ -28,7 +28,7 @@ router.get('/current', (req, res) => {
 
 router.post('/', (req, res) => {
   const db = getDb();
-  const { calorie_target, protein_target } = req.body ?? {};
+  const { calorie_target, protein_target, start_weight_kg } = req.body ?? {};
 
   const calories = Number(calorie_target);
   const protein = Number(protein_target);
@@ -38,6 +38,15 @@ router.post('/', (req, res) => {
   }
   if (!Number.isFinite(protein) || protein <= 0) {
     return res.status(400).json({ error: 'protein_target must be a positive number' });
+  }
+
+  let startWeight = null;
+  if (start_weight_kg !== undefined && start_weight_kg !== null && start_weight_kg !== '') {
+    const w = Number(start_weight_kg);
+    if (!Number.isFinite(w) || w <= 0) {
+      return res.status(400).json({ error: 'start_weight_kg must be a positive number' });
+    }
+    startWeight = w;
   }
 
   const existing = db
@@ -51,10 +60,10 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      `INSERT INTO sessions (start_date, calorie_target, protein_target, status)
-       VALUES (?, ?, ?, 'open')`
+      `INSERT INTO sessions (start_date, calorie_target, protein_target, status, start_weight_kg)
+       VALUES (?, ?, ?, 'open', ?)`
     )
-    .run(today(), Math.round(calories), Math.round(protein));
+    .run(today(), Math.round(calories), Math.round(protein), startWeight);
 
   const session = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(info.lastInsertRowid);
   res.status(201).json({ session: decorate(session) });
@@ -73,11 +82,22 @@ router.post('/:id/close', (req, res) => {
     return res.status(409).json({ error: 'session already closed' });
   }
 
+  let endWeight = null;
+  const raw = req.body?.end_weight_kg;
+  if (raw !== undefined && raw !== null && raw !== '') {
+    const w = Number(raw);
+    if (!Number.isFinite(w) || w <= 0) {
+      return res.status(400).json({ error: 'end_weight_kg must be a positive number' });
+    }
+    endWeight = w;
+  }
+
   const tx = db.transaction(() => {
     db.prepare(`DELETE FROM meals WHERE session_id = ?`).run(id);
+    db.prepare(`DELETE FROM daily_weights WHERE session_id = ?`).run(id);
     db.prepare(
-      `UPDATE sessions SET status = 'closed', end_date = ? WHERE id = ?`
-    ).run(today(), id);
+      `UPDATE sessions SET status = 'closed', end_date = ?, end_weight_kg = ? WHERE id = ?`
+    ).run(today(), endWeight, id);
   });
   tx();
 
