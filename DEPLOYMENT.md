@@ -4,6 +4,24 @@ This guide is for running the tracker on a Raspberry Pi behind Tailscale.
 There is no authentication built in — access control is delegated to your
 tailnet.
 
+> ## ⚠️ Do not expose this to the public internet
+>
+> The server binds `0.0.0.0:8002` and has **no authentication, no rate
+> limiting, and no CSRF protection**. Anyone who can reach the port has
+> full read/write access to your data.
+>
+> Safe deployments:
+> - On a Raspberry Pi joined to your Tailscale tailnet (intended setup).
+> - On a host with a firewall that allows only your tailnet/LAN.
+>
+> Unsafe deployments:
+> - A VPS with the port open to the internet.
+> - A router with port-forwarding to the Pi.
+> - Any cloud environment where `0.0.0.0` ends up reachable from outside.
+>
+> If you need real auth, fork the project and add it before deploying
+> anywhere shared.
+
 ## Prerequisites
 
 - Node.js 20 or later (`node --version`).
