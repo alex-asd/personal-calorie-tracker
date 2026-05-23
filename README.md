@@ -115,7 +115,9 @@ returns a placeholder message.
 server/          Express app, SQLite schema, route handlers
   index.js       Production entry (initDb + listen)
   app.js         createApp() factory used by index.js and tests
-  db.js          Schema + migrations (initDb accepts an override dbPath)
+  db.js          Connection setup; delegates schema to migrate.js
+  migrate.js     Runs unapplied migrations/*.sql files in order
+  migrations/    Versioned schema migrations (NNN_*.sql)
   dates.js       Local-timezone YYYY-MM-DD helpers
   routes/        One file per API resource
   __tests__/     Vitest integration tests + seed helpers

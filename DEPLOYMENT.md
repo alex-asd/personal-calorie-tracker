@@ -141,6 +141,12 @@ npm run build        # rebuilds the client bundle
 sudo systemctl restart calorie-tracker
 ```
 
+Schema changes are picked up automatically on restart: `initDb` runs any
+new SQL files in `server/migrations/` that haven't been recorded in the
+`_migrations` tracking table. Take a backup (see below) before any update
+that ships a migration if you want a clean rollback path — there are no
+down migrations.
+
 ## Backups
 
 The whole database is a single file. To back it up safely:
