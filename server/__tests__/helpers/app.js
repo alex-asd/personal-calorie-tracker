@@ -4,5 +4,5 @@ import { createApp } from '../../app.js';
 export function createTestApp() {
   closeDb();
   initDb({ dbPath: ':memory:' });
-  return createApp({ serveStatic: false });
+  return createApp({ serveStatic: false, requireAuth: false });
 }

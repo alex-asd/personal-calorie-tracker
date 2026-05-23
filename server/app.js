@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { basicAuth } from './auth.js';
 import sessionsRouter from './routes/sessions.js';
 import mealsRouter from './routes/meals.js';
 import savedMealsRouter from './routes/savedMeals.js';
@@ -10,9 +11,14 @@ import exportRouter from './routes/export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function createApp({ serveStatic = true } = {}) {
+export function createApp({
+  serveStatic = true,
+  requireAuth = Boolean(process.env.TRACKER_PASSWORD),
+} = {}) {
   const app = express();
   app.use(express.json());
+
+  if (requireAuth) app.use(basicAuth);
 
   app.get('/api/health', (req, res) => {
     res.json({ ok: true, time: new Date().toISOString() });

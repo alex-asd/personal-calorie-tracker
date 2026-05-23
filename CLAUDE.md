@@ -25,7 +25,7 @@ Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.
 
 ### Server (`server/`)
 
-The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true })` in `server/app.js`, which mounts the five API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. Tests construct the app directly via `createApp({ serveStatic: false })` so there's no listener and no static fallback.
+The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true, requireAuth = Boolean(process.env.TRACKER_PASSWORD) })` in `server/app.js`, which mounts the five API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. When `requireAuth` is true, `basicAuth` middleware from `server/auth.js` is mounted before everything (protects API + SPA); the username is ignored, only the password is checked against `TRACKER_PASSWORD` with `crypto.timingSafeEqual`. Tests construct the app directly via `createApp({ serveStatic: false, requireAuth: false })` so there's no listener, no static fallback, and no auth even if `TRACKER_PASSWORD` happens to be set in the shell.
 
 Routers map 1:1 to the data model:
 

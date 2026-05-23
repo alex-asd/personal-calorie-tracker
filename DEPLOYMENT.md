@@ -6,9 +6,9 @@ tailnet.
 
 > ## ⚠️ Do not expose this to the public internet
 >
-> The server binds `0.0.0.0:8002` and has **no authentication, no rate
-> limiting, and no CSRF protection**. Anyone who can reach the port has
-> full read/write access to your data.
+> The server binds `0.0.0.0:8002` and has **no authentication by default,
+> no rate limiting, and no CSRF protection**. Anyone who can reach the
+> port has full read/write access to your data.
 >
 > Safe deployments:
 >
@@ -21,8 +21,11 @@ tailnet.
 > - A router with port-forwarding to the Pi.
 > - Any cloud environment where `0.0.0.0` ends up reachable from outside.
 >
-> If you need real auth, fork the project and add it before deploying
-> anywhere shared.
+> If you must deploy somewhere others can reach, at minimum set
+> `TRACKER_PASSWORD` to enable HTTP Basic Auth (see
+> [Optional: enable HTTP Basic Auth](#optional-enable-http-basic-auth))
+> **and** put TLS in front of the service. For anything beyond a single
+> trusted user, fork and add real auth before deploying.
 
 ## Prerequisites
 
@@ -167,10 +170,63 @@ above.
 
 ## Environment variables
 
-| Variable   | Default  | Purpose                                      |
-| ---------- | -------- | -------------------------------------------- |
-| `PORT`     | `8002`   | HTTP port the server binds to                |
-| `DATA_DIR` | `./data` | Directory holding `tracker.db` and WAL files |
+| Variable           | Default  | Purpose                                                                       |
+| ------------------ | -------- | ----------------------------------------------------------------------------- |
+| `PORT`             | `8002`   | HTTP port the server binds to                                                 |
+| `DATA_DIR`         | `./data` | Directory holding `tracker.db` and WAL files                                  |
+| `TRACKER_PASSWORD` | unset    | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only. |
+
+## Optional: enable HTTP Basic Auth
+
+Set `TRACKER_PASSWORD` to require a password on every request. When unset
+(the default) behaviour is identical to the original tailnet-only model.
+
+Generate a long random password:
+
+```bash
+openssl rand -base64 32
+```
+
+Add it to the systemd unit:
+
+```ini
+[Service]
+...
+Environment=TRACKER_PASSWORD=paste-the-output-here
+```
+
+Then reload and restart:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart calorie-tracker
+```
+
+To change the password, edit the unit, reload, restart. To disable auth,
+remove the line and restart.
+
+**Command-line access** (e.g. downloading the JSON export):
+
+```bash
+curl -u anything:"$TRACKER_PASSWORD" http://<pi-hostname>:8002/api/export -o session.json
+```
+
+The username is ignored — type anything when a browser prompts.
+
+**Security caveats:**
+
+- HTTP Basic sends the password (base64-encoded, not hashed) on every
+  request. Inside a tailnet this is fine — WireGuard encrypts traffic
+  end-to-end. **Outside a tailnet, put TLS in front of the service**
+  (Caddy, nginx, or `tailscale serve --https`) before setting
+  `TRACKER_PASSWORD`, otherwise the password travels in plaintext on
+  every hop.
+- There is no lockout or rate limiting on failed attempts. A short or
+  guessable password can be brute-forced — use the `openssl` command
+  above, not a memorable phrase.
+- Browsers cache Basic credentials until the tab (sometimes the whole
+  browser) closes. There is no app-level "log out" — closing the tab is
+  the workaround.
 
 ## Tailscale access
 

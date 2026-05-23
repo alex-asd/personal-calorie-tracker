@@ -6,8 +6,8 @@ behind a private Tailscale network.
 
 > ## ⚠️ Security: read before you deploy
 >
-> **This app has no authentication.** Anyone who can reach the HTTP port has
-> full read/write access to your data.
+> **This app ships with no authentication by default.** Anyone who can reach
+> the HTTP port has full read/write access to your data.
 >
 > It is designed to live on a Tailscale tailnet (or another trusted private
 > network) where access control is delegated to the network layer. **Do not
@@ -15,9 +15,13 @@ behind a private Tailscale network.
 > don't fully control.** The server binds `0.0.0.0` by default, so a single
 > firewall or port-forwarding mistake is enough to publish your data.
 >
-> There is no rate limiting, no CSRF protection, no security headers, and no
-> account isolation by design. If you need those, this is not the right
-> project — fork it and add an auth layer first.
+> Optional safety net: set `TRACKER_PASSWORD` to require HTTP Basic Auth on
+> every request — see [Optional: HTTP Basic Auth](#optional-http-basic-auth)
+> below.
+>
+> There is still no rate limiting, no CSRF protection, and no security
+> headers. If you need those, fork the project and harden it before
+> deploying anywhere shared.
 
 ## What you can do with it
 
@@ -104,10 +108,53 @@ returns a placeholder message.
 
 ## Configuration
 
-| Variable   | Default  | Purpose                                      |
-| ---------- | -------- | -------------------------------------------- |
-| `PORT`     | `8002`   | HTTP port the server binds to                |
-| `DATA_DIR` | `./data` | Directory holding `tracker.db` and WAL files |
+| Variable           | Default  | Purpose                                                                       |
+| ------------------ | -------- | ----------------------------------------------------------------------------- |
+| `PORT`             | `8002`   | HTTP port the server binds to                                                 |
+| `DATA_DIR`         | `./data` | Directory holding `tracker.db` and WAL files                                  |
+| `TRACKER_PASSWORD` | unset    | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only. |
+
+## Optional: HTTP Basic Auth
+
+If you're running outside Tailscale, sharing your tailnet, or just want
+defense in depth, set `TRACKER_PASSWORD` to enable password protection on
+every request. When unset (the default), behaviour is identical to before.
+
+Generate a long random password:
+
+```bash
+openssl rand -base64 32
+```
+
+Use it for dev or local runs:
+
+```bash
+export TRACKER_PASSWORD='paste-the-output-here'
+npm run dev          # or: npm start
+```
+
+For production (systemd) see [DEPLOYMENT.md](DEPLOYMENT.md#optional-enable-http-basic-auth).
+
+The username is ignored — type anything when the browser prompts. From
+the command line:
+
+```bash
+curl -u anything:$TRACKER_PASSWORD http://your-host:8002/api/export -o session.json
+```
+
+**Things to know:**
+
+- HTTP Basic sends the password (base64-encoded, not hashed) on every
+  request. Inside a tailnet this is fine — WireGuard encrypts the
+  traffic end-to-end. **Outside a tailnet, put TLS in front of the
+  service** (Caddy, nginx, or `tailscale serve --https`) before setting
+  `TRACKER_PASSWORD`, otherwise the password travels in plaintext on
+  every hop.
+- There is no lockout or rate limiting on failed attempts. Use the
+  `openssl` command above — not a memorable phrase.
+- Browsers cache Basic credentials until the tab (sometimes the whole
+  browser) closes. There is no app-level "log out" — closing the tab is
+  the workaround.
 
 ## Repository layout
 
