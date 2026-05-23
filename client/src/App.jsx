@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom';
-import { SessionProvider } from './SessionContext.jsx';
 import Nav from './components/Nav.jsx';
 import Home from './pages/Home.jsx';
 import SavedMeals from './pages/SavedMeals.jsx';
@@ -8,7 +7,7 @@ import SessionDetail from './pages/SessionDetail.jsx';
 
 export default function App() {
   return (
-    <SessionProvider>
+    <>
       <Nav />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -16,6 +15,6 @@ export default function App() {
         <Route path="/archive" element={<Archive />} />
         <Route path="/archive/:id" element={<SessionDetail />} />
       </Routes>
-    </SessionProvider>
+    </>
   );
 }

@@ -1,34 +1,35 @@
 import { useState } from 'react';
-import { useSession } from '../SessionContext.jsx';
+import { useSession, useCloseSession } from '../hooks/useSession.js';
 
 export default function SessionHeader() {
-  const { session, closeSession } = useSession();
+  const { data: session } = useSession();
+  const closeSession = useCloseSession();
   const [confirming, setConfirming] = useState(false);
-  const [closing, setClosing] = useState(false);
   const [endWeight, setEndWeight] = useState('');
-  const [error, setError] = useState(null);
+  const [localError, setLocalError] = useState(null);
 
   if (!session) return null;
 
   async function onConfirmClose() {
     if (endWeight !== '' && !(Number(endWeight) > 0)) {
-      setError('Final weight must be a positive number');
+      setLocalError('Final weight must be a positive number');
       return;
     }
-    setClosing(true);
-    setError(null);
+    setLocalError(null);
     try {
-      await closeSession({
+      await closeSession.mutateAsync({
+        id: session.id,
         end_weight_kg: endWeight === '' ? null : Number(endWeight),
       });
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setClosing(false);
       setConfirming(false);
       setEndWeight('');
+    } catch {
+      // surfaced via closeSession.error
     }
   }
+
+  const closing = closeSession.isPending;
+  const error = localError || closeSession.error?.message;
 
   return (
     <section className="card session-header">
@@ -75,7 +76,8 @@ export default function SessionHeader() {
               onClick={() => {
                 setConfirming(false);
                 setEndWeight('');
-                setError(null);
+                setLocalError(null);
+                closeSession.reset();
               }}
               disabled={closing}
             >

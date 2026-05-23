@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -8,12 +10,17 @@ function fmtMeta(m) {
   return parts.join(' · ');
 }
 
+function invalidateMealsAndDays(queryClient) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.meals.list() });
+  const current = queryClient.getQueryData(queryKeys.sessions.current());
+  if (current?.id) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.sessions.days(current.id) });
+  }
+}
+
 export default function AddMealModal({ onClose, onAdded }) {
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState('pick');
-  const [savedMeals, setSavedMeals] = useState([]);
-  const [loadingSaved, setLoadingSaved] = useState(true);
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const [name, setName] = useState('');
   const [calories, setCalories] = useState('');
@@ -22,23 +29,28 @@ export default function AddMealModal({ onClose, onAdded }) {
   const [fat, setFat] = useState('');
   const [saveToLibrary, setSaveToLibrary] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    api
-      .get('/api/saved-meals')
-      .then(({ savedMeals }) => {
-        if (active) setSavedMeals(savedMeals);
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
-        if (active) setLoadingSaved(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const {
+    data: savedMeals = [],
+    isLoading: loadingSaved,
+    error: savedError,
+  } = useQuery({
+    queryKey: queryKeys.savedMeals.list(),
+    queryFn: async () => {
+      const { savedMeals } = await api.get('/api/saved-meals');
+      return savedMeals;
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (payload) => api.post('/api/meals', payload),
+    onSuccess: (_data, variables) => {
+      invalidateMealsAndDays(queryClient);
+      if (variables.save_to_library) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.savedMeals.list() });
+      }
+      onAdded();
+    },
+  });
 
   useEffect(() => {
     function onKey(e) {
@@ -48,46 +60,32 @@ export default function AddMealModal({ onClose, onAdded }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  async function pickSaved(saved) {
-    setSubmitting(true);
-    setError(null);
-    try {
-      await api.post('/api/meals', {
-        name: saved.name,
-        calories: saved.calories,
-        protein: saved.protein,
-        carbs: saved.carbs,
-        fat: saved.fat,
-        source_saved_meal_id: saved.id,
-      });
-      onAdded();
-    } catch (e) {
-      setError(e.message);
-      setSubmitting(false);
-    }
+  function pickSaved(saved) {
+    addMutation.mutate({
+      name: saved.name,
+      calories: saved.calories,
+      protein: saved.protein,
+      carbs: saved.carbs,
+      fat: saved.fat,
+      source_saved_meal_id: saved.id,
+    });
   }
 
-  async function submitNew(e) {
+  function submitNew(e) {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    try {
-      await api.post('/api/meals', {
-        name,
-        calories: Number(calories),
-        protein: Number(protein),
-        carbs: carbs === '' ? null : Number(carbs),
-        fat: fat === '' ? null : Number(fat),
-        save_to_library: saveToLibrary,
-      });
-      onAdded();
-    } catch (err) {
-      setError(err.message);
-      setSubmitting(false);
-    }
+    addMutation.mutate({
+      name,
+      calories: Number(calories),
+      protein: Number(protein),
+      carbs: carbs === '' ? null : Number(carbs),
+      fat: fat === '' ? null : Number(fat),
+      save_to_library: saveToLibrary,
+    });
   }
 
   const newValid = name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
+  const submitting = addMutation.isPending;
+  const error = savedError?.message || addMutation.error?.message;
 
   return (
     <div className="modal-overlay" onClick={onClose}>

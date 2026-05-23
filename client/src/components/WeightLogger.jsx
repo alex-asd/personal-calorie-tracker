@@ -1,60 +1,47 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 
 export default function WeightLogger({ disabled = false }) {
-  const [weight, setWeight] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [input, setInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data: weight,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.weights.today(),
+    queryFn: async () => {
       const { weight } = await api.get('/api/weights/today');
-      setWeight(weight);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return weight;
+    },
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const logMutation = useMutation({
+    mutationFn: (weight_kg) => api.post('/api/weights', { weight_kg }),
+    onSuccess: ({ weight }) => {
+      queryClient.setQueryData(queryKeys.weights.today(), weight);
+      setInput('');
+    },
+  });
 
-  async function onLog(e) {
+  const clearMutation = useMutation({
+    mutationFn: () => api.delete('/api/weights/today'),
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.weights.today(), null);
+    },
+  });
+
+  function onLog(e) {
     e.preventDefault();
     if (!(Number(input) > 0)) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const { weight } = await api.post('/api/weights', {
-        weight_kg: Number(input),
-      });
-      setWeight(weight);
-      setInput('');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+    logMutation.mutate(Number(input));
   }
 
-  async function onClear() {
-    setSubmitting(true);
-    setError(null);
-    try {
-      await api.delete('/api/weights/today');
-      setWeight(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const submitting = logMutation.isPending || clearMutation.isPending;
+  const mutationError = logMutation.error?.message || clearMutation.error?.message;
 
   return (
     <section className="card weight-logger">
@@ -63,11 +50,15 @@ export default function WeightLogger({ disabled = false }) {
         {weight ? (
           <div className="actions">
             <span className="weight-value">{weight.weight_kg} kg</span>
-            <button onClick={onClear} disabled={submitting} aria-label="Clear weight">
+            <button
+              onClick={() => clearMutation.mutate()}
+              disabled={submitting}
+              aria-label="Clear weight"
+            >
               ×
             </button>
           </div>
-        ) : loading ? (
+        ) : isLoading ? (
           <span className="muted">Loading…</span>
         ) : (
           <form onSubmit={onLog} className="row inline-form">
@@ -89,7 +80,8 @@ export default function WeightLogger({ disabled = false }) {
       {disabled && !weight && (
         <p className="muted small">Session is past day 90 — close it to log weight.</p>
       )}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error">{error.message}</p>}
+      {mutationError && <p className="error">{mutationError}</p>}
     </section>
   );
 }

@@ -40,10 +40,12 @@ See [`REQUIREMENTS.md`](REQUIREMENTS.md) for the product spec and data model.
 
 - Node.js 20+ (Express + `better-sqlite3`)
 - React 18 + Vite
+- TanStack Query for server-state caching on the client
 - SQLite single-file database (WAL mode)
 
-No ORM, no auth library, no client state library beyond a single React
-context.
+No ORM, no auth library. Server state on the client is managed by
+TanStack Query; there is no separate client-state library beyond
+React's built-ins.
 
 ## Quickstart (development)
 

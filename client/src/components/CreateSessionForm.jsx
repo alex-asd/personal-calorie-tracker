@@ -1,34 +1,27 @@
 import { useState } from 'react';
-import { useSession } from '../SessionContext.jsx';
+import { useCreateSession } from '../hooks/useSession.js';
 
 export default function CreateSessionForm() {
-  const { createSession } = useSession();
+  const createSession = useCreateSession();
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [weight, setWeight] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
   const valid =
     Number(calories) > 0 && Number(protein) > 0 && (weight === '' || Number(weight) > 0);
 
-  async function onSubmit(e) {
+  function onSubmit(e) {
     e.preventDefault();
     if (!valid) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await createSession({
-        calorie_target: Number(calories),
-        protein_target: Number(protein),
-        start_weight_kg: weight === '' ? null : Number(weight),
-      });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+    createSession.mutate({
+      calorie_target: Number(calories),
+      protein_target: Number(protein),
+      start_weight_kg: weight === '' ? null : Number(weight),
+    });
   }
+
+  const submitting = createSession.isPending;
+  const error = createSession.error;
 
   return (
     <section className="card">
@@ -71,7 +64,7 @@ export default function CreateSessionForm() {
             placeholder="e.g. 75.5"
           />
         </label>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error">{error.message}</p>}
         <button type="submit" disabled={!valid || submitting} className="primary">
           {submitting ? 'Creating…' : 'Create session'}
         </button>

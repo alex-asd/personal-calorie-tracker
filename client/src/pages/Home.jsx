@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useSession } from '../SessionContext.jsx';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSession } from '../hooks/useSession.js';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 import CreateSessionForm from '../components/CreateSessionForm.jsx';
 import SessionHeader from '../components/SessionHeader.jsx';
 import TodayTotals from '../components/TodayTotals.jsx';
@@ -10,54 +12,29 @@ import DayHistoryTable from '../components/DayHistoryTable.jsx';
 import WeightLogger from '../components/WeightLogger.jsx';
 
 export default function Home() {
-  const { session, loading: sessionLoading, error: sessionError } = useSession();
-  const [meals, setMeals] = useState([]);
-  const [mealsLoading, setMealsLoading] = useState(false);
-  const [mealsError, setMealsError] = useState(null);
-  const [days, setDays] = useState([]);
-  const [daysError, setDaysError] = useState(null);
+  const { data: session, isLoading: sessionLoading, error: sessionError } = useSession();
   const [adding, setAdding] = useState(false);
 
-  const refreshMeals = useCallback(async () => {
-    if (!session) {
-      setMeals([]);
-      return;
-    }
-    setMealsLoading(true);
-    setMealsError(null);
-    try {
+  const mealsQuery = useQuery({
+    queryKey: queryKeys.meals.list(),
+    queryFn: async () => {
       const { meals } = await api.get('/api/meals');
-      setMeals(meals);
-    } catch (e) {
-      setMealsError(e.message);
-    } finally {
-      setMealsLoading(false);
-    }
-  }, [session]);
+      return meals;
+    },
+    enabled: !!session,
+  });
 
-  const refreshDays = useCallback(async () => {
-    if (!session) {
-      setDays([]);
-      return;
-    }
-    setDaysError(null);
-    try {
+  const daysQuery = useQuery({
+    queryKey: session ? queryKeys.sessions.days(session.id) : ['sessions', 'days', 'idle'],
+    queryFn: async () => {
       const { days } = await api.get(`/api/sessions/${session.id}/days`);
-      setDays(days);
-    } catch (e) {
-      setDaysError(e.message);
-    }
-  }, [session]);
+      return days;
+    },
+    enabled: !!session,
+  });
 
-  useEffect(() => {
-    refreshMeals();
-    refreshDays();
-  }, [refreshMeals, refreshDays]);
-
-  const onMealChange = useCallback(() => {
-    refreshMeals();
-    refreshDays();
-  }, [refreshMeals, refreshDays]);
+  const meals = mealsQuery.data ?? [];
+  const days = daysQuery.data ?? [];
 
   if (sessionLoading) {
     return (
@@ -71,7 +48,7 @@ export default function Home() {
 
   return (
     <main className="container">
-      {sessionError && <p className="error">{sessionError}</p>}
+      {sessionError && <p className="error">{sessionError.message}</p>}
 
       {!session && <CreateSessionForm />}
 
@@ -90,25 +67,16 @@ export default function Home() {
           <TodayTotals meals={meals} session={session} />
           <MealList
             meals={meals}
-            loading={mealsLoading}
-            error={mealsError}
+            loading={mealsQuery.isLoading}
+            error={mealsQuery.error}
             canEdit={!session.blocked}
-            onChange={onMealChange}
           />
-          {daysError && <p className="error">{daysError}</p>}
+          {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable days={days} session={session} />
         </>
       )}
 
-      {adding && (
-        <AddMealModal
-          onClose={() => setAdding(false)}
-          onAdded={() => {
-            setAdding(false);
-            onMealChange();
-          }}
-        />
-      )}
+      {adding && <AddMealModal onClose={() => setAdding(false)} onAdded={() => setAdding(false)} />}
     </main>
   );
 }

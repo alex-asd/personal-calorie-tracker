@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 import DayHistoryTable from '../components/DayHistoryTable.jsx';
 
 function parseLocal(s) {
@@ -21,30 +22,27 @@ function fmtRange(start, end) {
 
 export default function SessionDetail() {
   const { id } = useParams();
-  const [session, setSession] = useState(null);
-  const [days, setDays] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([api.get(`/api/sessions/${id}`), api.get(`/api/sessions/${id}/days`)])
-      .then(([sRes, dRes]) => {
-        if (cancelled) return;
-        setSession(sRes.session);
-        setDays(dRes.days);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const sessionQuery = useQuery({
+    queryKey: queryKeys.sessions.detail(id),
+    queryFn: async () => {
+      const { session } = await api.get(`/api/sessions/${id}`);
+      return session;
+    },
+  });
 
+  const daysQuery = useQuery({
+    queryKey: queryKeys.sessions.days(id),
+    queryFn: async () => {
+      const { days } = await api.get(`/api/sessions/${id}/days`);
+      return days;
+    },
+  });
+
+  const session = sessionQuery.data;
+  const days = daysQuery.data ?? [];
+  const isLoading = sessionQuery.isLoading || daysQuery.isLoading;
+  const error = sessionQuery.error || daysQuery.error;
   const dayCount = days.length;
 
   return (
@@ -56,8 +54,8 @@ export default function SessionDetail() {
         </Link>
       </header>
 
-      {loading && <p className="muted">Loading…</p>}
-      {error && <p className="error">{error}</p>}
+      {isLoading && <p className="muted">Loading…</p>}
+      {error && <p className="error">{error.message}</p>}
 
       {session && (
         <>

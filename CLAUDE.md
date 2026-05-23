@@ -16,7 +16,7 @@ Run from the repo root:
 - `npm start` — production: runs the server only. Requires that `npm run build` has been run.
 - `npm test` — runs the Vitest backend integration suite once (TZ pinned to UTC).
 - `npm run test:watch` — same suite in watch mode.
-- `npm run lint` / `npm run lint:fix` — ESLint (flat config in `eslint.config.js`). Covers `server/**/*.js` (Node globals) and `client/**/*.{js,jsx}` (browser + React + hooks). Both `react/no-unescaped-entities` and `react-hooks/set-state-in-effect` are disabled — the latter would flag the project's standard `useEffect(() => refresh(), [refresh])` data-load pattern; `react-hooks/exhaustive-deps` is still on.
+- `npm run lint` / `npm run lint:fix` — ESLint (flat config in `eslint.config.js`). Covers `server/**/*.js` (Node globals) and `client/**/*.{js,jsx}` (browser + React + hooks). Both `react/no-unescaped-entities` and `react-hooks/set-state-in-effect` are disabled; `react-hooks/exhaustive-deps` is still on.
 - `npm run format` / `npm run format:check` — Prettier (`.prettierrc`: `singleQuote`, `trailingComma: es5`, `printWidth: 100`). `eslint-config-prettier` is applied last in the ESLint config so the two don't fight.
 
 Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.db` and WAL files live).
@@ -58,11 +58,28 @@ Routers map 1:1 to the data model:
 
 ### Client (`client/src/`)
 
-- `main.jsx` mounts `<App />` inside `<BrowserRouter>`.
-- `App.jsx` wraps routes in `<SessionProvider>`. Four routes: `/`, `/saved-meals`, `/archive`, `/archive/:id`.
-- `SessionContext.jsx` is the single source of truth for the current open session on the client. Components call `useSession()` and use `refresh()` after mutations that change session-level fields. Per-page lists (today's meals, history, saved meals, weights) manage their own fetch state — `SessionContext` does **not** cache them.
-- `api.js` is a tiny `fetch` wrapper that throws `Error(data.error || 'HTTP <status>')`. Server endpoints consistently return `{ error: '...' }` on failure; preserve that shape when adding routes so client error messages stay useful.
+- `main.jsx` mounts `<App />` inside `<BrowserRouter>` and `<QueryClientProvider>`. The React Query devtools panel is mounted dev-only via `import.meta.env.DEV`.
+- `App.jsx` declares four routes: `/`, `/saved-meals`, `/archive`, `/archive/:id`. No top-level state provider beyond the router + query client — server state lives entirely in the TanStack Query cache.
+- `queryClient.js` defines the singleton with `staleTime: 30s`, `gcTime: 5m`, `refetchOnWindowFocus: true`, `retry: 1`. `queryKeys.js` centralises query keys so invalidation is typo-proof; reuse it instead of writing key arrays inline.
+- `hooks/useSession.js` exposes `useSession()`, `useCreateSession()`, `useCloseSession()` — thin wrappers around `useQuery` / `useMutation` against `/api/sessions/current`. The query cache replaces the old SessionContext as the single source of truth for the open session.
+- Components use `useQuery` for reads and `useMutation` for writes. Mutations invalidate the relevant cache keys in `onSuccess` (see the invalidation map below) — they do **not** call back into the parent to trigger a refetch. Parent `onSave` / `onAdded` callbacks now only handle local UI (closing an editor or modal).
+- `api.js` is a tiny `fetch` wrapper that throws `Error(data.error || 'HTTP <status>')`. Server endpoints consistently return `{ error: '...' }` on failure; preserve that shape when adding routes so client error messages stay useful. `api.js` is the `queryFn` / `mutationFn` body throughout.
 - Pages live in `pages/`, reusable UI in `components/`. The Add Meal flow is a modal (`AddMealModal.jsx`) launched from `Home.jsx`.
+
+#### Mutation → cache invalidation map
+
+When adding a new mutation, update this table and the mutation's `onSuccess`. `currentSessionId` is read from `queryClient.getQueryData(queryKeys.sessions.current())?.id` inside `onSuccess`.
+
+| Mutation                      | Invalidates / sets                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Create session                | sets `sessions.current()`; invalidates `sessions.all`                                                     |
+| Close session                 | clears `sessions.current()`; invalidates `sessions.all`                                                   |
+| Add meal                      | `meals.list()`, `sessions.days(currentSessionId)`; also `savedMeals.list()` if `save_to_library` was true |
+| Edit meal                     | `meals.list()`, `sessions.days(currentSessionId)`                                                         |
+| Delete meal                   | `meals.list()`, `sessions.days(currentSessionId)`                                                         |
+| Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected           |
+| Log weight                    | sets `weights.today()` directly (no refetch)                                                              |
+| Clear weight                  | sets `weights.today()` to `null`                                                                          |
 
 ### Tests (`server/__tests__/`)
 

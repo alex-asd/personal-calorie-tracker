@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 
 function parseLocal(s) {
   const [y, m, d] = s.split('-').map(Number);
@@ -26,27 +27,17 @@ function fmtWeight(start, end) {
 }
 
 export default function Archive() {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get('/api/sessions')
-      .then(({ sessions }) => {
-        if (!cancelled) setSessions(sessions);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const {
+    data: sessions = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.sessions.list(),
+    queryFn: async () => {
+      const { sessions } = await api.get('/api/sessions');
+      return sessions;
+    },
+  });
 
   return (
     <main className="container">
@@ -54,10 +45,10 @@ export default function Archive() {
         <h1>Archive</h1>
       </header>
 
-      {loading && <p className="muted">Loading…</p>}
-      {error && <p className="error">{error}</p>}
+      {isLoading && <p className="muted">Loading…</p>}
+      {error && <p className="error">{error.message}</p>}
 
-      {!loading && !error && sessions.length === 0 && (
+      {!isLoading && !error && sessions.length === 0 && (
         <section className="card">
           <p className="muted">
             No closed sessions yet. Sessions appear here once you close them from the Today page.

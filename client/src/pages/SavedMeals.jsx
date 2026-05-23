@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { queryKeys } from '../queryKeys.js';
 import SavedMealEditor from '../components/SavedMealEditor.jsx';
 
 function fmtMeta(m) {
@@ -10,48 +12,37 @@ function fmtMeta(m) {
 }
 
 export default function SavedMeals() {
-  const [savedMeals, setSavedMeals] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [opError, setOpError] = useState(null);
+  const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [busyId, setBusyId] = useState(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data: savedMeals = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.savedMeals.list(),
+    queryFn: async () => {
       const { savedMeals } = await api.get('/api/saved-meals');
-      setSavedMeals(savedMeals);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return savedMeals;
+    },
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/api/saved-meals/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.savedMeals.list() });
+    },
+  });
 
-  async function onDelete(id) {
+  function onDelete(id) {
     if (
       !window.confirm(
         'Delete this saved meal? Historical entries created from it will keep their values.'
       )
     )
       return;
-    setBusyId(id);
-    setOpError(null);
-    try {
-      await api.delete(`/api/saved-meals/${id}`);
-      refresh();
-    } catch (e) {
-      setOpError(e.message);
-    } finally {
-      setBusyId(null);
-    }
+    deleteMutation.mutate(id);
   }
 
   return (
@@ -68,23 +59,17 @@ export default function SavedMeals() {
       {adding && (
         <section className="card">
           <h2>New saved meal</h2>
-          <SavedMealEditor
-            onSave={() => {
-              setAdding(false);
-              refresh();
-            }}
-            onCancel={() => setAdding(false)}
-          />
+          <SavedMealEditor onSave={() => setAdding(false)} onCancel={() => setAdding(false)} />
         </section>
       )}
 
       <section className="card">
         <h2>Library</h2>
-        {loading && <p className="muted">Loading…</p>}
-        {error && <p className="error">{error}</p>}
-        {opError && <p className="error">{opError}</p>}
+        {isLoading && <p className="muted">Loading…</p>}
+        {error && <p className="error">{error.message}</p>}
+        {deleteMutation.error && <p className="error">{deleteMutation.error.message}</p>}
 
-        {!loading && !error && savedMeals.length === 0 && (
+        {!isLoading && !error && savedMeals.length === 0 && (
           <p className="muted">
             No saved meals yet. Add one above, or check "Also save to library" when logging a meal.
           </p>
@@ -92,39 +77,35 @@ export default function SavedMeals() {
 
         {savedMeals.length > 0 && (
           <ul className="meal-list">
-            {savedMeals.map((s) => (
-              <li key={s.id} className="meal-item">
-                {editingId === s.id ? (
-                  <SavedMealEditor
-                    meal={s}
-                    onSave={() => {
-                      setEditingId(null);
-                      refresh();
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <div className="row">
-                    <div className="meal-info">
-                      <div className="meal-name">{s.name}</div>
-                      <div className="muted small">{fmtMeta(s)}</div>
+            {savedMeals.map((s) => {
+              const busy = deleteMutation.isPending && deleteMutation.variables === s.id;
+              return (
+                <li key={s.id} className="meal-item">
+                  {editingId === s.id ? (
+                    <SavedMealEditor
+                      meal={s}
+                      onSave={() => setEditingId(null)}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <div className="row">
+                      <div className="meal-info">
+                        <div className="meal-name">{s.name}</div>
+                        <div className="muted small">{fmtMeta(s)}</div>
+                      </div>
+                      <div className="actions">
+                        <button onClick={() => setEditingId(s.id)} disabled={busy}>
+                          Edit
+                        </button>
+                        <button onClick={() => onDelete(s.id)} disabled={busy} className="danger">
+                          {busy ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="actions">
-                      <button onClick={() => setEditingId(s.id)} disabled={busyId === s.id}>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(s.id)}
-                        disabled={busyId === s.id}
-                        className="danger"
-                      >
-                        {busyId === s.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
