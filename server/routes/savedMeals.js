@@ -38,9 +38,7 @@ function parse(body) {
 
 router.get('/', (req, res) => {
   const db = getDb();
-  const savedMeals = db
-    .prepare(`SELECT * FROM saved_meals ORDER BY name COLLATE NOCASE ASC`)
-    .all();
+  const savedMeals = db.prepare(`SELECT * FROM saved_meals ORDER BY name COLLATE NOCASE ASC`).all();
   res.json({ savedMeals });
 });
 
@@ -51,9 +49,7 @@ router.post('/', (req, res) => {
   const { name, calories, protein, carbs, fat } = parsed.values;
 
   const info = db
-    .prepare(
-      `INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`
-    )
+    .prepare(`INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`)
     .run(name, calories, protein, carbs, fat);
 
   const savedMeal = db.prepare(`SELECT * FROM saved_meals WHERE id = ?`).get(info.lastInsertRowid);

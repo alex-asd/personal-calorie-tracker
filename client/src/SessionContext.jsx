@@ -25,24 +25,21 @@ export function SessionProvider({ children }) {
     refresh();
   }, [refresh]);
 
-  const createSession = useCallback(
-    async ({ calorie_target, protein_target, start_weight_kg }) => {
-      const { session } = await api.post('/api/sessions', {
-        calorie_target,
-        protein_target,
-        start_weight_kg
-      });
-      setSession(session);
-      return session;
-    },
-    []
-  );
+  const createSession = useCallback(async ({ calorie_target, protein_target, start_weight_kg }) => {
+    const { session } = await api.post('/api/sessions', {
+      calorie_target,
+      protein_target,
+      start_weight_kg,
+    });
+    setSession(session);
+    return session;
+  }, []);
 
   const closeSession = useCallback(
     async ({ end_weight_kg } = {}) => {
       if (!session) return null;
       const { session: closed } = await api.post(`/api/sessions/${session.id}/close`, {
-        end_weight_kg
+        end_weight_kg,
       });
       setSession(null);
       return closed;

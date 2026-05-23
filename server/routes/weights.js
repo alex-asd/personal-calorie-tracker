@@ -31,9 +31,7 @@ router.post('/', (req, res) => {
   const session = getOpenSession(db);
   if (!session) return res.status(404).json({ error: 'no open session' });
   if (isBlocked(session)) {
-    return res
-      .status(403)
-      .json({ error: 'session has exceeded 90 days; close it to log weight' });
+    return res.status(403).json({ error: 'session has exceeded 90 days; close it to log weight' });
   }
 
   const w = Number(req.body?.weight_kg);
@@ -51,9 +49,11 @@ router.post('/', (req, res) => {
       .json({ error: 'weight already logged for today; delete it first to re-log' });
   }
 
-  db.prepare(
-    `INSERT INTO daily_weights (session_id, date, weight_kg) VALUES (?, ?, ?)`
-  ).run(session.id, date, w);
+  db.prepare(`INSERT INTO daily_weights (session_id, date, weight_kg) VALUES (?, ?, ?)`).run(
+    session.id,
+    date,
+    w
+  );
 
   const row = db
     .prepare(`SELECT date, weight_kg FROM daily_weights WHERE session_id = ? AND date = ?`)

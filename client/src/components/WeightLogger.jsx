@@ -32,7 +32,7 @@ export default function WeightLogger({ disabled = false }) {
     setError(null);
     try {
       const { weight } = await api.post('/api/weights', {
-        weight_kg: Number(input)
+        weight_kg: Number(input),
       });
       setWeight(weight);
       setInput('');
@@ -80,10 +80,7 @@ export default function WeightLogger({ disabled = false }) {
               placeholder="kg"
               disabled={submitting || disabled}
             />
-            <button
-              type="submit"
-              disabled={submitting || disabled || !(Number(input) > 0)}
-            >
+            <button type="submit" disabled={submitting || disabled || !(Number(input) > 0)}>
               {submitting ? 'Saving…' : 'Log weight'}
             </button>
           </form>

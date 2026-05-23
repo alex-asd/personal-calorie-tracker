@@ -25,7 +25,7 @@ describe('POST /api/sessions', () => {
       start_date: today(),
       dayNumber: 1,
       warning: false,
-      blocked: false
+      blocked: false,
     });
   });
 
@@ -47,9 +47,7 @@ describe('POST /api/sessions', () => {
   });
 
   it('rejects missing calorie_target', async () => {
-    const res = await request(app)
-      .post('/api/sessions')
-      .send({ protein_target: 150 });
+    const res = await request(app).post('/api/sessions').send({ protein_target: 150 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/calorie_target/);
   });
@@ -133,13 +131,17 @@ describe('POST /api/sessions/:id/close', () => {
     const session = makeSession();
     insertMeal({ sessionId: session.id, calories: 500, protein: 30 });
     const db = getDb();
-    db.prepare(
-      `INSERT INTO daily_weights (session_id, date, weight_kg) VALUES (?, ?, ?)`
-    ).run(session.id, today(), 80);
+    db.prepare(`INSERT INTO daily_weights (session_id, date, weight_kg) VALUES (?, ?, ?)`).run(
+      session.id,
+      today(),
+      80
+    );
 
     await request(app).post(`/api/sessions/${session.id}/close`).send({});
 
-    const meals = db.prepare(`SELECT COUNT(*) AS n FROM meals WHERE session_id = ?`).get(session.id);
+    const meals = db
+      .prepare(`SELECT COUNT(*) AS n FROM meals WHERE session_id = ?`)
+      .get(session.id);
     const weights = db
       .prepare(`SELECT COUNT(*) AS n FROM daily_weights WHERE session_id = ?`)
       .get(session.id);
@@ -179,7 +181,7 @@ describe('GET /api/sessions', () => {
     const closed = makeSession({
       status: 'closed',
       end_date: today(),
-      startDaysAgo: 9
+      startDaysAgo: 9,
     });
     closed.start_date = addDays(today(), -9);
     closed.end_date = today();
@@ -189,7 +191,7 @@ describe('GET /api/sessions', () => {
     expect(res.body.sessions).toHaveLength(1);
     expect(res.body.sessions[0]).toMatchObject({
       status: 'closed',
-      day_count: 10
+      day_count: 10,
     });
   });
 });
@@ -199,14 +201,14 @@ describe('GET /api/sessions/:id/days', () => {
     const session = makeSession({
       status: 'closed',
       end_date: today(),
-      startDaysAgo: 2
+      startDaysAgo: 2,
     });
     insertMeal({ sessionId: session.id, date: today(), calories: 100, protein: 10 });
     insertMeal({
       sessionId: session.id,
       date: addDays(today(), -2),
       calories: 200,
-      protein: 20
+      protein: 20,
     });
 
     const res = await request(app).get(`/api/sessions/${session.id}/days`);
@@ -215,7 +217,7 @@ describe('GET /api/sessions/:id/days', () => {
     expect(res.body.days.map((d) => d.date)).toEqual([
       today(),
       addDays(today(), -1),
-      addDays(today(), -2)
+      addDays(today(), -2),
     ]);
     expect(res.body.days[1]).toMatchObject({ calories: 0, protein: 0 });
   });

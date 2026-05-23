@@ -15,10 +15,7 @@ function fmtRange(start, end) {
     ? { month: 'short', day: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' };
   const eOpts = { month: 'short', day: 'numeric', year: 'numeric' };
-  return `${s.toLocaleDateString(undefined, sOpts)} – ${e.toLocaleDateString(
-    undefined,
-    eOpts
-  )}`;
+  return `${s.toLocaleDateString(undefined, sOpts)} – ${e.toLocaleDateString(undefined, eOpts)}`;
 }
 
 function fmtWeight(start, end) {
@@ -63,8 +60,7 @@ export default function Archive() {
       {!loading && !error && sessions.length === 0 && (
         <section className="card">
           <p className="muted">
-            No closed sessions yet. Sessions appear here once you close them from the
-            Today page.
+            No closed sessions yet. Sessions appear here once you close them from the Today page.
           </p>
         </section>
       )}
@@ -78,12 +74,10 @@ export default function Archive() {
                 <Link to={`/archive/${s.id}`} className="archive-item card">
                   <div className="row">
                     <div>
-                      <div className="archive-title">
-                        {fmtRange(s.start_date, s.end_date)}
-                      </div>
+                      <div className="archive-title">{fmtRange(s.start_date, s.end_date)}</div>
                       <div className="muted small">
-                        {s.day_count} day{s.day_count === 1 ? '' : 's'} ·{' '}
-                        {s.calorie_target} kcal / {s.protein_target}g protein
+                        {s.day_count} day{s.day_count === 1 ? '' : 's'} · {s.calorie_target} kcal /{' '}
+                        {s.protein_target}g protein
                         {w && <> · {w}</>}
                       </div>
                     </div>

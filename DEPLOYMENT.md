@@ -11,10 +11,12 @@ tailnet.
 > full read/write access to your data.
 >
 > Safe deployments:
+>
 > - On a Raspberry Pi joined to your Tailscale tailnet (intended setup).
 > - On a host with a firewall that allows only your tailnet/LAN.
 >
 > Unsafe deployments:
+>
 > - A VPS with the port open to the internet.
 > - A router with port-forwarding to the Pi.
 > - Any cloud environment where `0.0.0.0` ends up reachable from outside.
@@ -159,10 +161,10 @@ above.
 
 ## Environment variables
 
-| Variable   | Default   | Purpose                                      |
-| ---------- | --------- | -------------------------------------------- |
-| `PORT`     | `8002`    | HTTP port the server binds to                |
-| `DATA_DIR` | `./data`  | Directory holding `tracker.db` and WAL files |
+| Variable   | Default  | Purpose                                      |
+| ---------- | -------- | -------------------------------------------- |
+| `PORT`     | `8002`   | HTTP port the server binds to                |
+| `DATA_DIR` | `./data` | Directory holding `tracker.db` and WAL files |
 
 ## Tailscale access
 

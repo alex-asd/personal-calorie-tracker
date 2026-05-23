@@ -75,7 +75,7 @@ describe('POST /api/weights', () => {
 });
 
 describe('DELETE /api/weights/today', () => {
-  it('removes today\'s weight', async () => {
+  it("removes today's weight", async () => {
     makeSession();
     await request(app).post('/api/weights').send({ weight_kg: 80 });
 

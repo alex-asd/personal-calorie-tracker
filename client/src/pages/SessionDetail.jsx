@@ -16,10 +16,7 @@ function fmtRange(start, end) {
     ? { month: 'short', day: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' };
   const eOpts = { month: 'short', day: 'numeric', year: 'numeric' };
-  return `${s.toLocaleDateString(undefined, sOpts)} – ${e.toLocaleDateString(
-    undefined,
-    eOpts
-  )}`;
+  return `${s.toLocaleDateString(undefined, sOpts)} – ${e.toLocaleDateString(undefined, eOpts)}`;
 }
 
 export default function SessionDetail() {
@@ -31,10 +28,7 @@ export default function SessionDetail() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      api.get(`/api/sessions/${id}`),
-      api.get(`/api/sessions/${id}/days`)
-    ])
+    Promise.all([api.get(`/api/sessions/${id}`), api.get(`/api/sessions/${id}/days`)])
       .then(([sRes, dRes]) => {
         if (cancelled) return;
         setSession(sRes.session);
@@ -70,20 +64,14 @@ export default function SessionDetail() {
           <section className="card">
             <h2>{fmtRange(session.start_date, session.end_date)}</h2>
             <p className="muted">
-              {dayCount} day{dayCount === 1 ? '' : 's'} · Targets:{' '}
-              {session.calorie_target} kcal / {session.protein_target}g protein
+              {dayCount} day{dayCount === 1 ? '' : 's'} · Targets: {session.calorie_target} kcal /{' '}
+              {session.protein_target}g protein
               {session.status === 'open' && ' · (still open)'}
             </p>
             {(session.start_weight_kg != null || session.end_weight_kg != null) && (
               <p className="muted">
-                Weight:{' '}
-                {session.start_weight_kg != null
-                  ? `${session.start_weight_kg} kg`
-                  : '—'}{' '}
-                →{' '}
-                {session.end_weight_kg != null
-                  ? `${session.end_weight_kg} kg`
-                  : '—'}
+                Weight: {session.start_weight_kg != null ? `${session.start_weight_kg} kg` : '—'} →{' '}
+                {session.end_weight_kg != null ? `${session.end_weight_kg} kg` : '—'}
               </p>
             )}
           </section>

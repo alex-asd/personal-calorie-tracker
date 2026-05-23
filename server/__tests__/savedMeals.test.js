@@ -38,14 +38,12 @@ describe('POST /api/saved-meals', () => {
       calories: 300,
       protein: 12,
       carbs: 50,
-      fat: 5
+      fat: 5,
     });
   });
 
   it('rejects missing name', async () => {
-    const res = await request(app)
-      .post('/api/saved-meals')
-      .send({ calories: 100, protein: 5 });
+    const res = await request(app).post('/api/saved-meals').send({ calories: 100, protein: 5 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/name/);
   });

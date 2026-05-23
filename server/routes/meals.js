@@ -83,9 +83,7 @@ router.post('/', (req, res) => {
 
   const saveToLibrary = Boolean(req.body?.save_to_library);
   const sourceSavedMealId =
-    req.body?.source_saved_meal_id != null
-      ? Number(req.body.source_saved_meal_id)
-      : null;
+    req.body?.source_saved_meal_id != null ? Number(req.body.source_saved_meal_id) : null;
 
   const date = today();
 
@@ -112,9 +110,7 @@ router.post('/', (req, res) => {
           `INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`
         )
         .run(name, calories, protein, carbs, fat);
-      savedMeal = db
-        .prepare(`SELECT * FROM saved_meals WHERE id = ?`)
-        .get(s.lastInsertRowid);
+      savedMeal = db.prepare(`SELECT * FROM saved_meals WHERE id = ?`).get(s.lastInsertRowid);
     }
 
     return { mealId: info.lastInsertRowid, savedMeal };

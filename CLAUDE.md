@@ -16,8 +16,8 @@ Run from the repo root:
 - `npm start` — production: runs the server only. Requires that `npm run build` has been run.
 - `npm test` — runs the Vitest backend integration suite once (TZ pinned to UTC).
 - `npm run test:watch` — same suite in watch mode.
-
-There is no linter or formatter configured. Don't invent commands for them.
+- `npm run lint` / `npm run lint:fix` — ESLint (flat config in `eslint.config.js`). Covers `server/**/*.js` (Node globals) and `client/**/*.{js,jsx}` (browser + React + hooks). Both `react/no-unescaped-entities` and `react-hooks/set-state-in-effect` are disabled — the latter would flag the project's standard `useEffect(() => refresh(), [refresh])` data-load pattern; `react-hooks/exhaustive-deps` is still on.
+- `npm run format` / `npm run format:check` — Prettier (`.prettierrc`: `singleQuote`, `trailingComma: es5`, `printWidth: 100`). `eslint-config-prettier` is applied last in the ESLint config so the two don't fight.
 
 Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.db` and WAL files live).
 
@@ -28,6 +28,7 @@ Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.
 The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true })` in `server/app.js`, which mounts the five API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. Tests construct the app directly via `createApp({ serveStatic: false })` so there's no listener and no static fallback.
 
 Routers map 1:1 to the data model:
+
 - `/api/sessions` — open/close/list sessions, fetch days for an archived session.
 - `/api/meals` — list/add/edit/delete meals for the open session.
 - `/api/saved-meals` — manage the reusable meal library.
@@ -35,6 +36,7 @@ Routers map 1:1 to the data model:
 - `/api/export` — pretty-printed JSON dump of the current open session.
 
 `server/db.js` owns the schema. Tables: `sessions`, `saved_meals`, `meals`, `daily_totals`, `daily_weights`. Key constraints:
+
 - Partial unique index `idx_one_open_session` enforces **at most one open session** at the DB level.
 - `meals` carry their own nutrition copy plus an optional `source_saved_meal_id` (`ON DELETE SET NULL`) so editing/deleting a SavedMeal never mutates historical entries.
 - `daily_totals` is maintained incrementally inside transactions in `routes/meals.js` (insert adds, edit applies the delta, delete subtracts). It is **not** recomputed from `meals` — the source of truth for archived-session day totals is `daily_totals`, which is why closing a session deletes `meals` but keeps `daily_totals`.
@@ -73,6 +75,7 @@ Backend-only integration suite using Vitest + supertest. Each test calls `create
 ### Dev → prod path
 
 Two modes share the same backend:
+
 1. **Dev:** Vite on `:5173` with `/api` proxy → Express on `:8002`. Hot reload on both halves.
 2. **Prod:** `npm run build` populates `client/dist/`; Express serves it and any `GET` that isn't `/api/*` falls back to `index.html` (so React Router client-side routes work on refresh).
 

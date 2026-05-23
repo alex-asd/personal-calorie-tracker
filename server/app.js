@@ -34,9 +34,11 @@ export function createApp({ serveStatic = true } = {}) {
       });
     } else {
       app.get('/', (req, res) => {
-        res.type('text/plain').send(
-          'Client build not found. In development, run `npm run dev:client` and open the Vite URL. For production, run `npm run build` first.'
-        );
+        res
+          .type('text/plain')
+          .send(
+            'Client build not found. In development, run `npm run dev:client` and open the Vite URL. For production, run `npm run build` first.'
+          );
       });
     }
   }

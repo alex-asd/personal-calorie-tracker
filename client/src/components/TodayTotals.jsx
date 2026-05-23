@@ -22,8 +22,7 @@ export default function TodayTotals({ meals, session }) {
         <div className="total">
           <div className="muted small">Protein</div>
           <div className="value">
-            {Math.round(protein)}g
-            <span className="muted small"> / {session.protein_target}g</span>
+            {Math.round(protein)}g<span className="muted small"> / {session.protein_target}g</span>
           </div>
         </div>
         <div className="total">

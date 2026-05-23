@@ -33,9 +33,7 @@ describe('GET /api/export', () => {
     expect(payload.session.calorie_target).toBe(2200);
     expect(payload.meals).toHaveLength(2);
     expect(payload.meals.map((m) => m.name).sort()).toEqual(['Lunch', 'Snack']);
-    expect(payload.daily_totals).toEqual([
-      { date: today(), calories: 800, protein: 50 }
-    ]);
+    expect(payload.daily_totals).toEqual([{ date: today(), calories: 800, protein: 50 }]);
     expect(payload.daily_weights).toEqual([{ date: today(), weight_kg: 80.5 }]);
     expect(payload.exported_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
@@ -54,12 +52,12 @@ describe('GET /api/export', () => {
     insertMeal({
       sessionId: session.id,
       date: addDays(today(), -2),
-      name: 'oldest'
+      name: 'oldest',
     });
     insertMeal({
       sessionId: session.id,
       date: addDays(today(), -1),
-      name: 'middle'
+      name: 'middle',
     });
 
     const res = await request(app).get('/api/export');

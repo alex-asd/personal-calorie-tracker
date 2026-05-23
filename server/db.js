@@ -85,7 +85,10 @@ export function initDb({ dbPath } = {}) {
   `);
 
   const sessionCols = new Set(
-    db.prepare(`PRAGMA table_info(sessions)`).all().map((c) => c.name)
+    db
+      .prepare(`PRAGMA table_info(sessions)`)
+      .all()
+      .map((c) => c.name)
   );
   if (!sessionCols.has('start_weight_kg')) {
     db.exec(`ALTER TABLE sessions ADD COLUMN start_weight_kg REAL`);

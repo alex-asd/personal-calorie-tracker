@@ -1,0 +1,8 @@
+node_modules/
+client/node_modules/
+client/dist/
+data/
+coverage/
+package-lock.json
+client/package-lock.json
+*.log

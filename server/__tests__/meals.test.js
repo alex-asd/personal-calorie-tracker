@@ -6,7 +6,7 @@ import {
   insertMeal,
   insertSavedMeal,
   getDailyTotal,
-  getMealRow
+  getMealRow,
 } from './helpers/seed.js';
 import { today, addDays } from '../dates.js';
 
@@ -23,7 +23,7 @@ describe('GET /api/meals', () => {
     expect(res.body.error).toMatch(/no open session/);
   });
 
-  it('lists today\'s meals by default', async () => {
+  it("lists today's meals by default", async () => {
     const session = makeSession();
     insertMeal({ sessionId: session.id, name: 'Lunch', calories: 600, protein: 40 });
     insertMeal({
@@ -31,7 +31,7 @@ describe('GET /api/meals', () => {
       date: addDays(today(), -1),
       name: 'Yesterday',
       calories: 500,
-      protein: 30
+      protein: 30,
     });
 
     const res = await request(app).get('/api/meals');
@@ -72,11 +72,11 @@ describe('POST /api/meals', () => {
       calories: 300,
       protein: 12,
       date: today(),
-      session_id: session.id
+      session_id: session.id,
     });
     expect(getDailyTotal(session.id, today())).toMatchObject({
       calories: 300,
-      protein: 12
+      protein: 12,
     });
   });
 
@@ -88,7 +88,7 @@ describe('POST /api/meals', () => {
 
     expect(getDailyTotal(session.id, today())).toMatchObject({
       calories: 750,
-      protein: 32
+      protein: 32,
     });
   });
 
@@ -110,18 +110,14 @@ describe('POST /api/meals', () => {
 
   it('rejects missing name', async () => {
     makeSession();
-    const res = await request(app)
-      .post('/api/meals')
-      .send({ calories: 100, protein: 5 });
+    const res = await request(app).post('/api/meals').send({ calories: 100, protein: 5 });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/name/);
   });
 
   it('rejects negative calories', async () => {
     makeSession();
-    const res = await request(app)
-      .post('/api/meals')
-      .send({ name: 'X', calories: -1, protein: 5 });
+    const res = await request(app).post('/api/meals').send({ name: 'X', calories: -1, protein: 5 });
     expect(res.status).toBe(400);
   });
 
@@ -145,15 +141,13 @@ describe('POST /api/meals', () => {
   it('does not duplicate to library when source_saved_meal_id is set', async () => {
     makeSession();
     const saved = insertSavedMeal({ name: 'Yogurt', calories: 150, protein: 10 });
-    const res = await request(app)
-      .post('/api/meals')
-      .send({
-        name: 'Yogurt',
-        calories: 150,
-        protein: 10,
-        source_saved_meal_id: saved.id,
-        save_to_library: true
-      });
+    const res = await request(app).post('/api/meals').send({
+      name: 'Yogurt',
+      calories: 150,
+      protein: 10,
+      source_saved_meal_id: saved.id,
+      save_to_library: true,
+    });
     expect(res.body.savedMeal).toBeNull();
     expect(res.body.meal.source_saved_meal_id).toBe(saved.id);
   });
@@ -165,7 +159,7 @@ describe('PUT /api/meals/:id', () => {
     const meal = insertMeal({
       sessionId: session.id,
       calories: 500,
-      protein: 30
+      protein: 30,
     });
     expect(getDailyTotal(session.id, today())).toMatchObject({ calories: 500, protein: 30 });
 
@@ -182,7 +176,7 @@ describe('PUT /api/meals/:id', () => {
     const meal = insertMeal({
       sessionId: session.id,
       calories: 800,
-      protein: 40
+      protein: 40,
     });
 
     await request(app)
@@ -198,7 +192,7 @@ describe('PUT /api/meals/:id', () => {
       sessionId: session.id,
       date: addDays(today(), -1),
       calories: 500,
-      protein: 30
+      protein: 30,
     });
 
     const res = await request(app)
@@ -252,7 +246,7 @@ describe('DELETE /api/meals/:id', () => {
     const session = makeSession({ startDaysAgo: 3 });
     const meal = insertMeal({
       sessionId: session.id,
-      date: addDays(today(), -1)
+      date: addDays(today(), -1),
     });
     const res = await request(app).delete(`/api/meals/${meal.id}`);
     expect(res.status).toBe(403);

@@ -5,9 +5,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   const db = getDb();
-  const session = db
-    .prepare(`SELECT * FROM sessions WHERE status = 'open' LIMIT 1`)
-    .get();
+  const session = db.prepare(`SELECT * FROM sessions WHERE status = 'open' LIMIT 1`).get();
   if (!session) return res.status(404).json({ error: 'no open session to export' });
 
   const meals = db
@@ -25,9 +23,7 @@ router.get('/', (req, res) => {
     .all(session.id);
 
   const dailyWeights = db
-    .prepare(
-      `SELECT date, weight_kg FROM daily_weights WHERE session_id = ? ORDER BY date ASC`
-    )
+    .prepare(`SELECT date, weight_kg FROM daily_weights WHERE session_id = ? ORDER BY date ASC`)
     .all(session.id);
 
   const payload = {
@@ -35,7 +31,7 @@ router.get('/', (req, res) => {
     session,
     daily_totals: dailyTotals,
     daily_weights: dailyWeights,
-    meals
+    meals,
   };
 
   const filename = `tracker-session-${session.id}-${session.start_date}.json`;

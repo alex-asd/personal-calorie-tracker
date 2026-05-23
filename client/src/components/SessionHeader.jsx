@@ -19,7 +19,7 @@ export default function SessionHeader() {
     setError(null);
     try {
       await closeSession({
-        end_weight_kg: endWeight === '' ? null : Number(endWeight)
+        end_weight_kg: endWeight === '' ? null : Number(endWeight),
       });
     } catch (e) {
       setError(e.message);
@@ -34,32 +34,26 @@ export default function SessionHeader() {
     <section className="card session-header">
       <div className="row">
         <div>
-          <h2>
-            Session · day {session.dayNumber} of 90
-          </h2>
+          <h2>Session · day {session.dayNumber} of 90</h2>
           <p className="muted">
-            Started {session.start_date} · {session.calorie_target} kcal /{' '}
-            {session.protein_target}g protein
-            {session.start_weight_kg != null && (
-              <> · start {session.start_weight_kg} kg</>
-            )}
+            Started {session.start_date} · {session.calorie_target} kcal / {session.protein_target}g
+            protein
+            {session.start_weight_kg != null && <> · start {session.start_weight_kg} kg</>}
           </p>
         </div>
         <div className="actions">
           <a href="/api/export" download className="button-link">
             Export JSON
           </a>
-          {!confirming && (
-            <button onClick={() => setConfirming(true)}>Close session</button>
-          )}
+          {!confirming && <button onClick={() => setConfirming(true)}>Close session</button>}
         </div>
       </div>
 
       {confirming && (
         <div className="confirm">
           <p>
-            Close this session? Meal entries and daily weight logs will be deleted;
-            daily totals and start/end weights are preserved in the archive.
+            Close this session? Meal entries and daily weight logs will be deleted; daily totals and
+            start/end weights are preserved in the archive.
           </p>
           <label>
             <span>Final weight (kg) — optional</span>

@@ -8,7 +8,7 @@ export function makeSession({
   start_weight_kg = null,
   status = 'open',
   end_date = null,
-  end_weight_kg = null
+  end_weight_kg = null,
 } = {}) {
   const db = getDb();
   const start_date = addDays(today(), -startDaysAgo);
@@ -38,7 +38,7 @@ export function insertMeal({
   protein = 30,
   carbs = null,
   fat = null,
-  source_saved_meal_id = null
+  source_saved_meal_id = null,
 }) {
   const db = getDb();
   const info = db
@@ -65,13 +65,11 @@ export function insertSavedMeal({
   calories = 400,
   protein = 25,
   carbs = null,
-  fat = null
+  fat = null,
 } = {}) {
   const db = getDb();
   const info = db
-    .prepare(
-      `INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`
-    )
+    .prepare(`INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`)
     .run(name, calories, protein, carbs, fat);
   return db.prepare(`SELECT * FROM saved_meals WHERE id = ?`).get(info.lastInsertRowid);
 }

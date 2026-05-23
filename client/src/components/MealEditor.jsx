@@ -10,8 +10,7 @@ export default function MealEditor({ meal, onSave, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const valid =
-    name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
+  const valid = name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
 
   async function submit(e) {
     e.preventDefault();
@@ -24,7 +23,7 @@ export default function MealEditor({ meal, onSave, onCancel }) {
         calories: Number(calories),
         protein: Number(protein),
         carbs: carbs === '' ? null : Number(carbs),
-        fat: fat === '' ? null : Number(fat)
+        fat: fat === '' ? null : Number(fat),
       });
       onSave();
     } catch (err) {

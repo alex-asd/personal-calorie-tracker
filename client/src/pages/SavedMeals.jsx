@@ -110,10 +110,7 @@ export default function SavedMeals() {
                       <div className="muted small">{fmtMeta(s)}</div>
                     </div>
                     <div className="actions">
-                      <button
-                        onClick={() => setEditingId(s.id)}
-                        disabled={busyId === s.id}
-                      >
+                      <button onClick={() => setEditingId(s.id)} disabled={busyId === s.id}>
                         Edit
                       </button>
                       <button

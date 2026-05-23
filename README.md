@@ -68,7 +68,22 @@ npm run test:watch  # same, in watch mode
 The suite is backend-only by design — every invariant that matters (one
 open session at a time, `daily_totals` delta math, the 90-day block,
 today-only edit window, `ON DELETE SET NULL` on saved-meal links) lives
-in the server. There is no linter or formatter.
+in the server.
+
+## Lint and format
+
+```bash
+npm run lint          # ESLint over server + client
+npm run lint:fix      # auto-fix what's auto-fixable
+npm run format        # Prettier write across the repo
+npm run format:check  # CI-friendly: fail if anything would change
+```
+
+ESLint uses flat config (`eslint.config.js`) with separate blocks for
+the Node server and the React/JSX client. Prettier (`.prettierrc`) uses
+single quotes, `es5` trailing commas, and a 100-char print width. The
+two tools don't fight — `eslint-config-prettier` disables ESLint's
+stylistic rules.
 
 ## Production deploy
 
@@ -87,10 +102,10 @@ returns a placeholder message.
 
 ## Configuration
 
-| Variable   | Default   | Purpose                                       |
-| ---------- | --------- | --------------------------------------------- |
-| `PORT`     | `8002`    | HTTP port the server binds to                 |
-| `DATA_DIR` | `./data`  | Directory holding `tracker.db` and WAL files  |
+| Variable   | Default  | Purpose                                      |
+| ---------- | -------- | -------------------------------------------- |
+| `PORT`     | `8002`   | HTTP port the server binds to                |
+| `DATA_DIR` | `./data` | Directory holding `tracker.db` and WAL files |
 
 ## Repository layout
 

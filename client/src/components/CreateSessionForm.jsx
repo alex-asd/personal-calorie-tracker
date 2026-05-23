@@ -10,9 +10,7 @@ export default function CreateSessionForm() {
   const [error, setError] = useState(null);
 
   const valid =
-    Number(calories) > 0 &&
-    Number(protein) > 0 &&
-    (weight === '' || Number(weight) > 0);
+    Number(calories) > 0 && Number(protein) > 0 && (weight === '' || Number(weight) > 0);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -23,7 +21,7 @@ export default function CreateSessionForm() {
       await createSession({
         calorie_target: Number(calories),
         protein_target: Number(protein),
-        start_weight_kg: weight === '' ? null : Number(weight)
+        start_weight_kg: weight === '' ? null : Number(weight),
       });
     } catch (err) {
       setError(err.message);
@@ -35,9 +33,7 @@ export default function CreateSessionForm() {
   return (
     <section className="card">
       <h2>Start a new session</h2>
-      <p className="muted">
-        A session spans up to 90 days. Set your daily targets to begin.
-      </p>
+      <p className="muted">A session spans up to 90 days. Set your daily targets to begin.</p>
       <form onSubmit={onSubmit} className="form">
         <label>
           <span>Daily calorie target</span>

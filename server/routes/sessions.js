@@ -14,15 +14,13 @@ function decorate(session) {
     ...session,
     dayNumber,
     warning: dayNumber === MAX_DAYS,
-    blocked: dayNumber > MAX_DAYS
+    blocked: dayNumber > MAX_DAYS,
   };
 }
 
 router.get('/current', (req, res) => {
   const db = getDb();
-  const row = db
-    .prepare(`SELECT * FROM sessions WHERE status = 'open' LIMIT 1`)
-    .get();
+  const row = db.prepare(`SELECT * FROM sessions WHERE status = 'open' LIMIT 1`).get();
   res.json({ session: decorate(row) });
 });
 
@@ -49,9 +47,7 @@ router.post('/', (req, res) => {
     startWeight = w;
   }
 
-  const existing = db
-    .prepare(`SELECT id FROM sessions WHERE status = 'open' LIMIT 1`)
-    .get();
+  const existing = db.prepare(`SELECT id FROM sessions WHERE status = 'open' LIMIT 1`).get();
   if (existing) {
     return res
       .status(409)
@@ -108,9 +104,7 @@ router.post('/:id/close', (req, res) => {
 router.get('/', (req, res) => {
   const db = getDb();
   const sessions = db
-    .prepare(
-      `SELECT * FROM sessions WHERE status = 'closed' ORDER BY end_date DESC, id DESC`
-    )
+    .prepare(`SELECT * FROM sessions WHERE status = 'closed' ORDER BY end_date DESC, id DESC`)
     .all();
   for (const s of sessions) {
     s.day_count = daysBetween(s.start_date, s.end_date) + 1;
@@ -141,7 +135,7 @@ router.get('/:id/days', (req, res) => {
     days.push({
       date: cursor,
       calories: row ? row.calories : 0,
-      protein: row ? row.protein : 0
+      protein: row ? row.protein : 0,
     });
     cursor = addDays(cursor, -1);
   }
@@ -150,7 +144,7 @@ router.get('/:id/days', (req, res) => {
     sessionId: id,
     startDate: session.start_date,
     endDate: session.end_date,
-    days
+    days,
   });
 });
 

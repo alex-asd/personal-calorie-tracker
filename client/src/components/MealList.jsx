@@ -58,10 +58,7 @@ export default function MealList({ meals, loading, error, canEdit, onChange }) {
                   </div>
                   {canEdit && (
                     <div className="actions">
-                      <button
-                        onClick={() => setEditingId(m.id)}
-                        disabled={busyId === m.id}
-                      >
+                      <button onClick={() => setEditingId(m.id)} disabled={busyId === m.id}>
                         Edit
                       </button>
                       <button

@@ -58,7 +58,7 @@ export default function AddMealModal({ onClose, onAdded }) {
         protein: saved.protein,
         carbs: saved.carbs,
         fat: saved.fat,
-        source_saved_meal_id: saved.id
+        source_saved_meal_id: saved.id,
       });
       onAdded();
     } catch (e) {
@@ -78,7 +78,7 @@ export default function AddMealModal({ onClose, onAdded }) {
         protein: Number(protein),
         carbs: carbs === '' ? null : Number(carbs),
         fat: fat === '' ? null : Number(fat),
-        save_to_library: saveToLibrary
+        save_to_library: saveToLibrary,
       });
       onAdded();
     } catch (err) {
@@ -126,7 +126,8 @@ export default function AddMealModal({ onClose, onAdded }) {
             {loadingSaved && <p className="muted">Loading saved meals…</p>}
             {!loadingSaved && savedMeals.length === 0 && (
               <p className="muted">
-                No saved meals yet. Switch to "New meal" and tick "Also save to library" to create one.
+                No saved meals yet. Switch to "New meal" and tick "Also save to library" to create
+                one.
               </p>
             )}
             {savedMeals.length > 0 && (
@@ -153,12 +154,7 @@ export default function AddMealModal({ onClose, onAdded }) {
           <form onSubmit={submitNew} className="form tab-body">
             <label>
               <span>Name</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoFocus
-              />
+              <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
             </label>
             <div className="form-grid">
               <label>
@@ -212,11 +208,7 @@ export default function AddMealModal({ onClose, onAdded }) {
               />
               <span>Also save to library</span>
             </label>
-            <button
-              type="submit"
-              className="primary"
-              disabled={!newValid || submitting}
-            >
+            <button type="submit" className="primary" disabled={!newValid || submitting}>
               {submitting ? 'Adding…' : 'Add meal'}
             </button>
           </form>

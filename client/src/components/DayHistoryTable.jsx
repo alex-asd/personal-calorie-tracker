@@ -22,7 +22,7 @@ function formatLabel(dateStr, today) {
   return parseLocal(dateStr).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   });
 }
 
@@ -53,11 +53,7 @@ export default function DayHistoryTable({ days, session, showRelative = true }) 
                 </div>
               </div>
               <div className="bar-row">
-                <ProgressBar
-                  value={d.protein}
-                  target={session.protein_target}
-                  variant="protein"
-                />
+                <ProgressBar value={d.protein} target={session.protein_target} variant="protein" />
                 <div className="bar-numeric">
                   {Math.round(d.protein)}g
                   <span className="muted"> / {session.protein_target}g</span>

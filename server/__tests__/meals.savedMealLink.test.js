@@ -18,7 +18,7 @@ describe('saved meal deletion → ON DELETE SET NULL on meals', () => {
       name: 'Yogurt',
       calories: 150,
       protein: 10,
-      source_saved_meal_id: saved.id
+      source_saved_meal_id: saved.id,
     });
 
     expect(getMealRow(meal.id).source_saved_meal_id).toBe(saved.id);
@@ -54,7 +54,7 @@ describe('saved meal deletion → ON DELETE SET NULL on meals', () => {
       name: 'Oats',
       calories: 300,
       protein: 12,
-      source_saved_meal_id: saved.id
+      source_saved_meal_id: saved.id,
     });
 
     await request(app)
