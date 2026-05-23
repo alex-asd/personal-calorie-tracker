@@ -4,10 +4,6 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = process.env.DATA_DIR
-  ? path.resolve(process.env.DATA_DIR)
-  : path.join(__dirname, '..', 'data');
-const dbPath = path.join(dataDir, 'tracker.db');
 
 let db = null;
 
@@ -16,10 +12,20 @@ export function getDb() {
   return db;
 }
 
-export function initDb() {
+function resolveDefaultDbPath() {
+  const dataDir = process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR)
+    : path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
+  return path.join(dataDir, 'tracker.db');
+}
+
+export function initDb({ dbPath } = {}) {
+  const target = dbPath || resolveDefaultDbPath();
+
+  if (db) db.close();
+  db = new Database(target);
+  if (target !== ':memory:') db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
   db.exec(`
@@ -89,4 +95,11 @@ export function initDb() {
   }
 
   return db;
+}
+
+export function closeDb() {
+  if (db) {
+    db.close();
+    db = null;
+  }
 }

@@ -58,7 +58,17 @@ npm run dev            # server on :8002, Vite client on :5173
 The Vite dev server proxies `/api/*` to the Express backend, so open
 `http://localhost:5173`.
 
-There is no test suite, linter, or formatter.
+## Tests
+
+```bash
+npm test            # backend integration suite (Vitest + supertest, in-memory SQLite)
+npm run test:watch  # same, in watch mode
+```
+
+The suite is backend-only by design — every invariant that matters (one
+open session at a time, `daily_totals` delta math, the 90-day block,
+today-only edit window, `ON DELETE SET NULL` on saved-meal links) lives
+in the server. There is no linter or formatter.
 
 ## Production deploy
 
@@ -86,10 +96,12 @@ returns a placeholder message.
 
 ```
 server/          Express app, SQLite schema, route handlers
-  index.js       Entry point
-  db.js          Schema + migrations
+  index.js       Production entry (initDb + listen)
+  app.js         createApp() factory used by index.js and tests
+  db.js          Schema + migrations (initDb accepts an override dbPath)
   dates.js       Local-timezone YYYY-MM-DD helpers
   routes/        One file per API resource
+  __tests__/     Vitest integration tests + seed helpers
 client/          Vite + React frontend
   src/
     pages/       Top-level routes
@@ -102,4 +114,4 @@ AI coding assistants — but it's useful for humans too.
 
 ## License
 
-[MIT](LICENSE).
+To be added.
