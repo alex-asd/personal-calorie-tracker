@@ -180,4 +180,4 @@ AI coding assistants — but it's useful for humans too.
 
 ## License
 
-To be added.
+[MIT](LICENSE.md)
