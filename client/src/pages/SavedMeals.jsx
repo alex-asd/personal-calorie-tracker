@@ -2,7 +2,29 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { useCategories } from '../hooks/useCategories.js';
 import SavedMealEditor from '../components/SavedMealEditor.jsx';
+import CategoryManager from '../components/CategoryManager.jsx';
+
+function groupByCategory(savedMeals, categories) {
+  const byId = new Map();
+  const uncategorized = [];
+  for (const m of savedMeals) {
+    if (m.category_id == null) {
+      uncategorized.push(m);
+    } else {
+      if (!byId.has(m.category_id)) byId.set(m.category_id, []);
+      byId.get(m.category_id).push(m);
+    }
+  }
+  const groups = categories
+    .map((c) => ({ key: `cat-${c.id}`, label: c.name, meals: byId.get(c.id) ?? [] }))
+    .filter((g) => g.meals.length > 0);
+  if (uncategorized.length > 0) {
+    groups.push({ key: 'uncategorized', label: 'Uncategorized', meals: uncategorized });
+  }
+  return groups;
+}
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -28,6 +50,8 @@ export default function SavedMeals() {
     },
   });
 
+  const { data: categories = [] } = useCategories();
+
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/saved-meals/${id}`),
     onSuccess: () => {
@@ -43,6 +67,38 @@ export default function SavedMeals() {
     )
       return;
     deleteMutation.mutate(id);
+  }
+
+  const groups = groupByCategory(savedMeals, categories);
+
+  function renderMealItem(s) {
+    const busy = deleteMutation.isPending && deleteMutation.variables === s.id;
+    return (
+      <li key={s.id} className="meal-item">
+        {editingId === s.id ? (
+          <SavedMealEditor
+            meal={s}
+            onSave={() => setEditingId(null)}
+            onCancel={() => setEditingId(null)}
+          />
+        ) : (
+          <div className="row">
+            <div className="meal-info">
+              <div className="meal-name">{s.name}</div>
+              <div className="muted small">{fmtMeta(s)}</div>
+            </div>
+            <div className="actions">
+              <button onClick={() => setEditingId(s.id)} disabled={busy}>
+                Edit
+              </button>
+              <button onClick={() => onDelete(s.id)} disabled={busy} className="danger">
+                {busy ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        )}
+      </li>
+    );
   }
 
   return (
@@ -76,39 +132,18 @@ export default function SavedMeals() {
         )}
 
         {savedMeals.length > 0 && (
-          <ul className="meal-list">
-            {savedMeals.map((s) => {
-              const busy = deleteMutation.isPending && deleteMutation.variables === s.id;
-              return (
-                <li key={s.id} className="meal-item">
-                  {editingId === s.id ? (
-                    <SavedMealEditor
-                      meal={s}
-                      onSave={() => setEditingId(null)}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  ) : (
-                    <div className="row">
-                      <div className="meal-info">
-                        <div className="meal-name">{s.name}</div>
-                        <div className="muted small">{fmtMeta(s)}</div>
-                      </div>
-                      <div className="actions">
-                        <button onClick={() => setEditingId(s.id)} disabled={busy}>
-                          Edit
-                        </button>
-                        <button onClick={() => onDelete(s.id)} disabled={busy} className="danger">
-                          {busy ? 'Deleting…' : 'Delete'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <div className="category-groups">
+            {groups.map((g) => (
+              <div key={g.key} className="category-group">
+                <h3 className="category-heading">{g.label}</h3>
+                <ul className="meal-list">{g.meals.map(renderMealItem)}</ul>
+              </div>
+            ))}
+          </div>
         )}
       </section>
+
+      <CategoryManager />
     </main>
   );
 }

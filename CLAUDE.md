@@ -25,22 +25,24 @@ Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.
 
 ### Server (`server/`)
 
-The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true, requireAuth = Boolean(process.env.TRACKER_PASSWORD) })` in `server/app.js`, which mounts the five API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. When `requireAuth` is true, `basicAuth` middleware from `server/auth.js` is mounted before everything (protects API + SPA); the username is ignored, only the password is checked against `TRACKER_PASSWORD` with `crypto.timingSafeEqual`. Tests construct the app directly via `createApp({ serveStatic: false, requireAuth: false })` so there's no listener, no static fallback, and no auth even if `TRACKER_PASSWORD` happens to be set in the shell.
+The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true, requireAuth = Boolean(process.env.TRACKER_PASSWORD) })` in `server/app.js`, which mounts the six API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. When `requireAuth` is true, `basicAuth` middleware from `server/auth.js` is mounted before everything (protects API + SPA); the username is ignored, only the password is checked against `TRACKER_PASSWORD` with `crypto.timingSafeEqual`. Tests construct the app directly via `createApp({ serveStatic: false, requireAuth: false })` so there's no listener, no static fallback, and no auth even if `TRACKER_PASSWORD` happens to be set in the shell.
 
 Routers map 1:1 to the data model:
 
 - `/api/sessions` — open/close/list sessions, fetch days for an archived session.
 - `/api/meals` — list/add/edit/delete meals for the open session.
-- `/api/saved-meals` — manage the reusable meal library.
+- `/api/saved-meals` — manage the reusable meal library (each meal optionally filed under one category).
+- `/api/categories` — user-created categories for the saved-meal library (CRUD; names unique case-insensitively).
 - `/api/weights` — daily weight log (one entry per day, replace-by-delete).
 - `/api/export` — pretty-printed JSON dump of the current open session.
 
-`server/db.js` owns the schema. Tables: `sessions`, `saved_meals`, `meals`, `daily_totals`, `daily_weights`. Key constraints:
+`server/db.js` owns the schema. Tables: `sessions`, `saved_meals`, `meals`, `daily_totals`, `daily_weights`, `categories`. Key constraints:
 
 - Partial unique index `idx_one_open_session` enforces **at most one open session** at the DB level.
 - `meals` carry their own nutrition copy plus an optional `source_saved_meal_id` (`ON DELETE SET NULL`) so editing/deleting a SavedMeal never mutates historical entries.
+- `saved_meals.category_id` is an optional FK to `categories` (`ON DELETE SET NULL`), so deleting a category just drops its meals back to "Uncategorized" (null). Categories apply **only** to the saved-meal library — logged `meals` are never categorized. `categories.name` is `UNIQUE COLLATE NOCASE`.
 - `daily_totals` is maintained incrementally inside transactions in `routes/meals.js` (insert adds, edit applies the delta, delete subtracts). It is **not** recomputed from `meals` — the source of truth for archived-session day totals is `daily_totals`, which is why closing a session deletes `meals` but keeps `daily_totals`.
-- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and records all existing files as applied without re-running them; that branch is one-shot and never fires again on the same DB.
+- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`, `003_meal_categories.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and records all existing files as applied without re-running them; that branch is one-shot and never fires again on the same DB.
 - `initDb({ dbPath } = {})` accepts an override path; tests pass `':memory:'` for isolation. WAL mode is skipped for in-memory databases. `closeDb()` is exported for test teardown / reset.
 
 `server/dates.js` deliberately uses local-timezone `YYYY-MM-DD` strings (not `toISOString()` / UTC). Day boundaries follow the Pi's local clock. All date comparisons across the codebase are string comparisons on this format — keep it that way.
@@ -81,10 +83,12 @@ When adding a new mutation, update this table and the mutation's `onSuccess`. `c
 | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Create session                | sets `sessions.current()`; invalidates `sessions.all`                                                     |
 | Close session                 | clears `sessions.current()`; invalidates `sessions.all`                                                   |
-| Add meal                      | `meals.all` (all date keys), `sessions.days(currentSessionId)`; also `savedMeals.list()` if `save_to_library` was true |
+| Add meal                      | `meals.all` (all date keys), `sessions.days(currentSessionId)`; also `savedMeals.list()` + `categories.list()` if `save_to_library` was true |
 | Edit meal                     | `meals.all`, `sessions.days(currentSessionId)`                                                            |
 | Delete meal                   | `meals.all`, `sessions.days(currentSessionId)`                                                           |
 | Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected           |
+| Category create/rename        | `categories.list()` only                                                                                  |
+| Category delete               | `categories.list()` **and** `savedMeals.list()` (its meals get `category_id = NULL` server-side)          |
 | Log weight                    | sets `weights.today()` directly (no refetch)                                                              |
 | Clear weight                  | sets `weights.today()` to `null`                                                                          |
 

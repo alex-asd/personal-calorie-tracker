@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { useCategories } from '../hooks/useCategories.js';
 
 export default function SavedMealEditor({ meal, onSave, onCancel }) {
   const queryClient = useQueryClient();
   const isEdit = Boolean(meal);
+  const { data: categories = [] } = useCategories();
   const [name, setName] = useState(meal?.name ?? '');
   const [calories, setCalories] = useState(meal ? String(meal.calories) : '');
   const [protein, setProtein] = useState(meal ? String(meal.protein) : '');
   const [carbs, setCarbs] = useState(meal?.carbs == null ? '' : String(meal.carbs));
   const [fat, setFat] = useState(meal?.fat == null ? '' : String(meal.fat));
+  const [categoryId, setCategoryId] = useState(meal?.category_id == null ? '' : String(meal.category_id));
 
   const saveMutation = useMutation({
     mutationFn: (payload) =>
@@ -34,6 +37,7 @@ export default function SavedMealEditor({ meal, onSave, onCancel }) {
       protein: Number(protein),
       carbs: carbs === '' ? null : Number(carbs),
       fat: fat === '' ? null : Number(fat),
+      category_id: categoryId === '' ? null : Number(categoryId),
     });
   }
 
@@ -94,6 +98,17 @@ export default function SavedMealEditor({ meal, onSave, onCancel }) {
           />
         </label>
       </div>
+      <label>
+        <span>Category</span>
+        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <option value="">— None —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
       {saveMutation.error && <p className="error">{saveMutation.error.message}</p>}
       <div className="row">
         <button type="submit" className="primary" disabled={!valid || saving}>

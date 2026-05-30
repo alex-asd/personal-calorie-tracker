@@ -66,12 +66,22 @@ export function insertSavedMeal({
   protein = 25,
   carbs = null,
   fat = null,
+  category_id = null,
 } = {}) {
   const db = getDb();
   const info = db
-    .prepare(`INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`)
-    .run(name, calories, protein, carbs, fat);
+    .prepare(
+      `INSERT INTO saved_meals (name, calories, protein, carbs, fat, category_id)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(name, calories, protein, carbs, fat, category_id);
   return db.prepare(`SELECT * FROM saved_meals WHERE id = ?`).get(info.lastInsertRowid);
+}
+
+export function insertCategory({ name = 'Test category' } = {}) {
+  const db = getDb();
+  const info = db.prepare(`INSERT INTO categories (name) VALUES (?)`).run(name);
+  return db.prepare(`SELECT * FROM categories WHERE id = ?`).get(info.lastInsertRowid);
 }
 
 export function getDailyTotal(sessionId, date) {
