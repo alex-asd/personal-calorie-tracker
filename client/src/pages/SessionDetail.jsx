@@ -3,11 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import DayHistoryTable from '../components/DayHistoryTable.jsx';
-
-function parseLocal(s) {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
+import { parseLocal } from '../dates.js';
 
 function fmtRange(start, end) {
   const s = parseLocal(start);

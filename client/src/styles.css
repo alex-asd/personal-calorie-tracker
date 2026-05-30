@@ -384,6 +384,10 @@ button.danger {
   line-height: 1;
 }
 
+.modal-actions {
+  margin-bottom: 0.75rem;
+}
+
 .tabs {
   display: flex;
   gap: 0.4rem;
@@ -480,6 +484,15 @@ button.danger {
   padding: 0.65rem 0.85rem;
   background: var(--surface-2);
   border-radius: 0.5rem;
+}
+
+.day-row.clickable {
+  cursor: pointer;
+}
+
+.day-row.clickable:hover {
+  background: var(--surface);
+  outline: 1px solid var(--border);
 }
 
 @media (max-width: 520px) {

@@ -151,6 +151,48 @@ describe('POST /api/meals', () => {
     expect(res.body.savedMeal).toBeNull();
     expect(res.body.meal.source_saved_meal_id).toBe(saved.id);
   });
+
+  it('logs a meal for an earlier day and bumps that day', async () => {
+    const session = makeSession({ startDaysAgo: 3 });
+    const yesterday = addDays(today(), -1);
+
+    const res = await request(app)
+      .post('/api/meals')
+      .send({ name: 'Backfill', calories: 400, protein: 25, date: yesterday });
+
+    expect(res.status).toBe(201);
+    expect(res.body.meal).toMatchObject({ name: 'Backfill', date: yesterday });
+    expect(getDailyTotal(session.id, yesterday)).toMatchObject({ calories: 400, protein: 25 });
+    expect(getDailyTotal(session.id, today())).toBeUndefined();
+  });
+
+  it('rejects a date before the session start', async () => {
+    const session = makeSession({ startDaysAgo: 1 });
+    const beforeStart = addDays(session.start_date, -1);
+    const res = await request(app)
+      .post('/api/meals')
+      .send({ name: 'X', calories: 100, protein: 5, date: beforeStart });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/before the session start/);
+  });
+
+  it('rejects a future date', async () => {
+    makeSession();
+    const res = await request(app)
+      .post('/api/meals')
+      .send({ name: 'X', calories: 100, protein: 5, date: addDays(today(), 1) });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/future/);
+  });
+
+  it('rejects a malformed date', async () => {
+    makeSession();
+    const res = await request(app)
+      .post('/api/meals')
+      .send({ name: 'X', calories: 100, protein: 5, date: '2025/01/01' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/date format/);
+  });
 });
 
 describe('PUT /api/meals/:id', () => {
@@ -186,8 +228,28 @@ describe('PUT /api/meals/:id', () => {
     expect(getDailyTotal(session.id, today())).toMatchObject({ calories: 300, protein: 20 });
   });
 
-  it('returns 403 for meals from earlier days', async () => {
+  it('edits a meal from an earlier day and applies the delta to that day', async () => {
     const session = makeSession({ startDaysAgo: 3 });
+    const yesterday = addDays(today(), -1);
+    const meal = insertMeal({
+      sessionId: session.id,
+      date: yesterday,
+      calories: 500,
+      protein: 30,
+    });
+    expect(getDailyTotal(session.id, yesterday)).toMatchObject({ calories: 500, protein: 30 });
+
+    const res = await request(app)
+      .put(`/api/meals/${meal.id}`)
+      .send({ name: 'edited', calories: 700, protein: 45 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.meal).toMatchObject({ name: 'edited', date: yesterday });
+    expect(getDailyTotal(session.id, yesterday)).toMatchObject({ calories: 700, protein: 45 });
+  });
+
+  it('returns 403 when editing in a session past 90 days', async () => {
+    const session = makeSession({ startDaysAgo: 90 });
     const meal = insertMeal({
       sessionId: session.id,
       date: addDays(today(), -1),
@@ -200,7 +262,7 @@ describe('PUT /api/meals/:id', () => {
       .send({ name: 'edited', calories: 100, protein: 5 });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toMatch(/earlier days/);
+    expect(res.body.error).toMatch(/90 days/);
   });
 
   it('returns 404 for unknown meal id', async () => {
@@ -242,14 +304,30 @@ describe('DELETE /api/meals/:id', () => {
     expect(row).toMatchObject({ calories: 0, protein: 0 });
   });
 
-  it('returns 403 for meals from earlier days', async () => {
+  it('deletes a meal from an earlier day and subtracts from that day', async () => {
     const session = makeSession({ startDaysAgo: 3 });
+    const yesterday = addDays(today(), -1);
+    insertMeal({ sessionId: session.id, date: yesterday, calories: 500, protein: 30 });
     const meal = insertMeal({
       sessionId: session.id,
-      date: addDays(today(), -1),
+      date: yesterday,
+      calories: 200,
+      protein: 10,
     });
+
+    const res = await request(app).delete(`/api/meals/${meal.id}`);
+
+    expect(res.status).toBe(204);
+    expect(getMealRow(meal.id)).toBeUndefined();
+    expect(getDailyTotal(session.id, yesterday)).toMatchObject({ calories: 500, protein: 30 });
+  });
+
+  it('returns 403 when deleting in a session past 90 days', async () => {
+    const session = makeSession({ startDaysAgo: 90 });
+    const meal = insertMeal({ sessionId: session.id, date: addDays(today(), -1) });
     const res = await request(app).delete(`/api/meals/${meal.id}`);
     expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/90 days/);
   });
 
   it('returns 404 for unknown meal id', async () => {

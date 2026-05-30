@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { formatLabel } from '../dates.js';
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -11,14 +12,14 @@ function fmtMeta(m) {
 }
 
 function invalidateMealsAndDays(queryClient) {
-  queryClient.invalidateQueries({ queryKey: queryKeys.meals.list() });
+  queryClient.invalidateQueries({ queryKey: queryKeys.meals.all });
   const current = queryClient.getQueryData(queryKeys.sessions.current());
   if (current?.id) {
     queryClient.invalidateQueries({ queryKey: queryKeys.sessions.days(current.id) });
   }
 }
 
-export default function AddMealModal({ onClose, onAdded }) {
+export default function AddMealModal({ onClose, onAdded, date }) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState('pick');
 
@@ -68,6 +69,7 @@ export default function AddMealModal({ onClose, onAdded }) {
       carbs: saved.carbs,
       fat: saved.fat,
       source_saved_meal_id: saved.id,
+      ...(date ? { date } : {}),
     });
   }
 
@@ -80,6 +82,7 @@ export default function AddMealModal({ onClose, onAdded }) {
       carbs: carbs === '' ? null : Number(carbs),
       fat: fat === '' ? null : Number(fat),
       save_to_library: saveToLibrary,
+      ...(date ? { date } : {}),
     });
   }
 
@@ -96,7 +99,7 @@ export default function AddMealModal({ onClose, onAdded }) {
         aria-label="Add a meal"
       >
         <div className="modal-header">
-          <h2>Add a meal</h2>
+          <h2>{date ? `Add a meal · ${formatLabel(date)}` : 'Add a meal'}</h2>
           <button onClick={onClose} aria-label="Close" className="close">
             ×
           </button>

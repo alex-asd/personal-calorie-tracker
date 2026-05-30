@@ -15,6 +15,14 @@ function isBlocked(session) {
   return dayNumber > MAX_DAYS;
 }
 
+function validateDate(session, raw) {
+  if (raw == null || raw === '') return { date: today() };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: 'invalid date format' };
+  if (raw < session.start_date) return { error: 'date is before the session start' };
+  if (raw > today()) return { error: 'cannot log meals for a future day' };
+  return { date: raw };
+}
+
 function parseNutrition(body) {
   const name = String(body?.name ?? '').trim();
   if (!name) return { error: 'name is required' };
@@ -81,11 +89,13 @@ router.post('/', (req, res) => {
   if (parsed.error) return res.status(400).json({ error: parsed.error });
   const { name, calories, protein, carbs, fat } = parsed.values;
 
+  const parsedDate = validateDate(session, req.body?.date);
+  if (parsedDate.error) return res.status(400).json({ error: parsedDate.error });
+  const { date } = parsedDate;
+
   const saveToLibrary = Boolean(req.body?.save_to_library);
   const sourceSavedMealId =
     req.body?.source_saved_meal_id != null ? Number(req.body.source_saved_meal_id) : null;
-
-  const date = today();
 
   const tx = db.transaction(() => {
     const info = db
@@ -133,9 +143,6 @@ router.put('/:id', (req, res) => {
     .prepare(`SELECT * FROM meals WHERE id = ? AND session_id = ?`)
     .get(id, session.id);
   if (!meal) return res.status(404).json({ error: 'meal not found' });
-  if (meal.date !== today()) {
-    return res.status(403).json({ error: 'cannot edit meals from earlier days' });
-  }
   if (isBlocked(session)) {
     return res.status(403).json({ error: 'session has exceeded 90 days' });
   }
@@ -175,8 +182,8 @@ router.delete('/:id', (req, res) => {
     .prepare(`SELECT * FROM meals WHERE id = ? AND session_id = ?`)
     .get(id, session.id);
   if (!meal) return res.status(404).json({ error: 'meal not found' });
-  if (meal.date !== today()) {
-    return res.status(403).json({ error: 'cannot delete meals from earlier days' });
+  if (isBlocked(session)) {
+    return res.status(403).json({ error: 'session has exceeded 90 days' });
   }
 
   const tx = db.transaction(() => {

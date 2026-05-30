@@ -52,9 +52,15 @@ Routers map 1:1 to the data model:
 - `dayNumber > 90` → `blocked: true`; meal and weight POSTs return 403. The user must close the session to unblock. There is no auto-close.
 - Closing a session: inside a transaction, deletes rows from `meals` and `daily_weights` for that session, sets `status='closed'` and `end_date=today()`. `daily_totals` is preserved for the Archive view.
 
-### Today-only edit window
+### Editing past days (open session)
 
-`meals` PUT/DELETE check `meal.date !== today()` and reject earlier days with 403. The Home UI surfaces today's meals as editable; the 90-day history table is read-only by design.
+Any day of the **open** session is editable, from `start_date` up to and including today:
+
+- `meals` POST accepts an optional `date` in the body. `validateDate()` defaults it to `today()` and rejects malformed dates, dates before `start_date`, and future dates (400). The `daily_totals` upsert is keyed by that `date`.
+- `meals` PUT/DELETE no longer gate on `meal.date === today()`; they edit/delete any meal in the open session and apply the delta to `meal.date`. Both still 403 when the session is **blocked** (past 90 days) — the user must close it first.
+- Archived sessions stay read-only (their `meals` rows are deleted on close; only `daily_totals` survives).
+
+On the client, the Home History table (`DayHistoryTable`) rows are clickable (via an opt-in `onSelectDay` prop) and open `DayDetailModal`, which lists that day's meals with add/edit/delete (reusing `MealList` + `AddMealModal`, the latter taking an optional `date` prop). The same `DayHistoryTable` rendered read-only in `SessionDetail` omits `onSelectDay`, so archive rows are not clickable.
 
 ### Client (`client/src/`)
 
@@ -64,7 +70,8 @@ Routers map 1:1 to the data model:
 - `hooks/useSession.js` exposes `useSession()`, `useCreateSession()`, `useCloseSession()` — thin wrappers around `useQuery` / `useMutation` against `/api/sessions/current`. The query cache replaces the old SessionContext as the single source of truth for the open session.
 - Components use `useQuery` for reads and `useMutation` for writes. Mutations invalidate the relevant cache keys in `onSuccess` (see the invalidation map below) — they do **not** call back into the parent to trigger a refetch. Parent `onSave` / `onAdded` callbacks now only handle local UI (closing an editor or modal).
 - `api.js` is a tiny `fetch` wrapper that throws `Error(data.error || 'HTTP <status>')`. Server endpoints consistently return `{ error: '...' }` on failure; preserve that shape when adding routes so client error messages stay useful. `api.js` is the `queryFn` / `mutationFn` body throughout.
-- Pages live in `pages/`, reusable UI in `components/`. The Add Meal flow is a modal (`AddMealModal.jsx`) launched from `Home.jsx`.
+- Pages live in `pages/`, reusable UI in `components/`. The Add Meal flow is a modal (`AddMealModal.jsx`) launched from `Home.jsx` (or from `DayDetailModal.jsx` with a `date` prop for past days).
+- Meal reads are keyed per date: `queryKeys.meals.list(date)`. Home reads today (`meals.list(todayString())`); `DayDetailModal` reads its day. All meal mutations invalidate the `queryKeys.meals.all` (`['meals']`) prefix, which matches every date sub-key. Local date helpers (`todayString`, `formatLabel`, `parseLocal`, `shiftDateString`) live in `client/src/dates.js`.
 
 #### Mutation → cache invalidation map
 
@@ -74,9 +81,9 @@ When adding a new mutation, update this table and the mutation's `onSuccess`. `c
 | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Create session                | sets `sessions.current()`; invalidates `sessions.all`                                                     |
 | Close session                 | clears `sessions.current()`; invalidates `sessions.all`                                                   |
-| Add meal                      | `meals.list()`, `sessions.days(currentSessionId)`; also `savedMeals.list()` if `save_to_library` was true |
-| Edit meal                     | `meals.list()`, `sessions.days(currentSessionId)`                                                         |
-| Delete meal                   | `meals.list()`, `sessions.days(currentSessionId)`                                                         |
+| Add meal                      | `meals.all` (all date keys), `sessions.days(currentSessionId)`; also `savedMeals.list()` if `save_to_library` was true |
+| Edit meal                     | `meals.all`, `sessions.days(currentSessionId)`                                                            |
+| Delete meal                   | `meals.all`, `sessions.days(currentSessionId)`                                                           |
 | Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected           |
 | Log weight                    | sets `weights.today()` directly (no refetch)                                                              |
 | Clear weight                  | sets `weights.today()` to `null`                                                                          |
@@ -87,7 +94,7 @@ Backend-only integration suite using Vitest + supertest. Each test calls `create
 
 - `helpers/seed.js` exposes `makeSession({ startDaysAgo, status, ... })`, `insertMeal`, `insertSavedMeal`, `getDailyTotal`, `getMealRow`. The 90-day boundary tests work by **seeding sessions with backdated `start_date`s** rather than mocking `today()` — simpler and avoids module-level patching of date helpers across routes.
 - `npm test` runs with `TZ=UTC` because `server/dates.js` builds `YYYY-MM-DD` from local time; without the pin, tests would drift near midnight in non-UTC zones.
-- When adding a new router, add a test file next to the others. Cover at minimum: the happy path, the validation 400s, and any session-gating (open/blocked/today-only) the route enforces.
+- When adding a new router, add a test file next to the others. Cover at minimum: the happy path, the validation 400s, and any session-gating (open/blocked/date-range) the route enforces.
 
 ### Dev → prod path
 

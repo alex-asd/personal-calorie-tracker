@@ -24,8 +24,8 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 ## Pages
 
-1. **Home / Today** — today's overview, today's weight, and the 90-day history table.
-2. **Add Meal** — modal from Home; only available for today.
+1. **Home / Today** — today's overview, today's weight, and the 90-day history table (each history day opens an editor for that day).
+2. **Add Meal** — modal launched from Home (today) or from a day in the history table (any day of the open session).
 3. **Saved Meals** — manage the saved meal library (view, edit, delete).
 4. **Archive** — list of closed sessions.
 5. **Session Detail** — drill-down view of one archived session.
@@ -43,7 +43,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - Shows today's totals: calories, protein, carbs, fat.
 - "Add meal" button in the top right.
 - Today's meals can be added and edited.
-- Earlier days in the open session are read-only.
+- Earlier days in the open session are editable too: clicking a day in the history opens a modal to add, edit, and delete that day's meals.
 - A "today's weight" card lets the user log or clear a single weight value for the current day.
 
 ### Adding a meal
@@ -52,7 +52,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - For a new meal, a checkbox decides whether it's also added to the saved library.
 - Picking a saved meal copies its numbers exactly into a new Meal entry.
 - Calories and protein required; carbs and fat optional.
-- Only available for the current day.
+- Available for any day of the open session — today by default, or a past day chosen from the history. Dates before the session start or in the future are rejected.
 
 ### Daily history (below today's overview)
 
@@ -61,14 +61,14 @@ Up to the last 90 days of the current session. For each day, show total calories
 - **Calories bar** — green while at/under the target; red (full) once over.
 - **Protein bar** — red while under target; green once the target is met or exceeded.
 
-Numeric values are shown next to both bars.
+Numeric values are shown next to both bars. Clicking a day opens a modal to add, edit, or delete that day's meals (open session only; archived sessions stay read-only).
 
 ### Sessions
 
 - A session spans up to 90 days.
 - The user can close a session at any time, optionally entering a final weight.
 - On close: meals not marked reusable are deleted; per-day weight logs are deleted; daily totals (calories + protein) and the session's starting/ending weights are preserved. The session moves to the Archive.
-- On day 90: warn the user; on day > 90, block further meal and weight entries until the session is closed. No auto-close.
+- On day 90: warn the user; on day > 90, block further meal and weight entries — including edits to earlier days — until the session is closed. No auto-close.
 
 ### Saved Meals page
 
@@ -106,5 +106,5 @@ The following were left open in the initial spec and resolved during build:
 
 - No authentication or multi-user support.
 - No automatic nutrition lookup or estimation.
-- No editing of meals from previous days within the current session.
+- No editing of archived (closed) sessions — only the open session is mutable.
 - No mobile-specific UI work beyond what comes from being a responsive React app.

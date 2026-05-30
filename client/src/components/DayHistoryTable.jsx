@@ -1,41 +1,33 @@
 import ProgressBar from './ProgressBar.jsx';
+import { todayString, formatLabel } from '../dates.js';
 
-function parseLocal(s) {
-  const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function todayString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function shiftDateString(s, deltaDays) {
-  const d = parseLocal(s);
-  d.setDate(d.getDate() + deltaDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function formatLabel(dateStr, today) {
-  if (today && dateStr === today) return 'Today';
-  if (today && dateStr === shiftDateString(today, -1)) return 'Yesterday';
-  return parseLocal(dateStr).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-export default function DayHistoryTable({ days, session, showRelative = true }) {
+export default function DayHistoryTable({ days, session, showRelative = true, onSelectDay }) {
   if (!days || days.length === 0) return null;
   const today = showRelative ? todayString() : null;
+  const clickable = Boolean(onSelectDay);
 
   return (
     <section className="card">
       <h2>History</h2>
       <div className="day-rows">
         {days.map((d) => (
-          <div key={d.date} className="day-row">
+          <div
+            key={d.date}
+            className={clickable ? 'day-row clickable' : 'day-row'}
+            {...(clickable
+              ? {
+                  role: 'button',
+                  tabIndex: 0,
+                  onClick: () => onSelectDay(d.date),
+                  onKeyDown: (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectDay(d.date);
+                    }
+                  },
+                }
+              : {})}
+          >
             <div className="day-label">
               <div className="day-label-main">{formatLabel(d.date, today)}</div>
               <div className="muted small">{d.date}</div>
