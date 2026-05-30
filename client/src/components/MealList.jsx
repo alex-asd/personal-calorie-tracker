@@ -11,14 +11,20 @@ function fmtMeta(m) {
   return parts.join(' · ');
 }
 
-export default function MealList({ meals, loading, error, canEdit }) {
+export default function MealList({
+  meals,
+  loading,
+  error,
+  canEdit,
+  emptyMessage = 'No meals logged today yet.',
+}) {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/meals/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.meals.list() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals.all });
       const current = queryClient.getQueryData(queryKeys.sessions.current());
       if (current?.id) {
         queryClient.invalidateQueries({ queryKey: queryKeys.sessions.days(current.id) });
@@ -37,9 +43,7 @@ export default function MealList({ meals, loading, error, canEdit }) {
       {loading && <p className="muted">Loading meals…</p>}
       {error && <p className="error">{error.message}</p>}
       {deleteMutation.error && <p className="error">{deleteMutation.error.message}</p>}
-      {!loading && !error && meals.length === 0 && (
-        <p className="muted">No meals logged today yet.</p>
-      )}
+      {!loading && !error && meals.length === 0 && <p className="muted">{emptyMessage}</p>}
       {meals.length > 0 && (
         <ul className="meal-list">
           {meals.map((m) => {

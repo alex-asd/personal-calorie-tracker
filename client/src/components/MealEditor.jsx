@@ -14,7 +14,7 @@ export default function MealEditor({ meal, onSave, onCancel }) {
   const saveMutation = useMutation({
     mutationFn: (payload) => api.put(`/api/meals/${meal.id}`, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.meals.list() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.meals.all });
       const current = queryClient.getQueryData(queryKeys.sessions.current());
       if (current?.id) {
         queryClient.invalidateQueries({ queryKey: queryKeys.sessions.days(current.id) });

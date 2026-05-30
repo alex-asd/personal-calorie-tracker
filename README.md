@@ -28,6 +28,8 @@ behind a private Tailscale network.
 - Run a "session" (up to 90 days) with daily calorie and protein targets.
 - Log meals one at a time. Calories and protein are required; carbs and fat
   are optional.
+- Edit or backfill meals for any day of the open session — open a day from
+  the history to fix or fill it in, not just today.
 - Reuse common meals from a saved-meal library; edits to the library don't
   rewrite historical entries.
 - See the last 90 days of daily totals with progress bars against your
@@ -42,7 +44,7 @@ See [`REQUIREMENTS.md`](REQUIREMENTS.md) for the product spec and data model.
 
 ## Tech stack
 
-- Node.js 20+ (Express + `better-sqlite3`)
+- Node.js 22+ (Express + `better-sqlite3` 12 — ships prebuilt binaries for Node 22, 24, 25, 26)
 - React 18 + Vite
 - TanStack Query for server-state caching on the client
 - SQLite single-file database (WAL mode)
@@ -73,8 +75,8 @@ npm run test:watch  # same, in watch mode
 
 The suite is backend-only by design — every invariant that matters (one
 open session at a time, `daily_totals` delta math, the 90-day block,
-today-only edit window, `ON DELETE SET NULL` on saved-meal links) lives
-in the server.
+past-day edits within the open session, `ON DELETE SET NULL` on saved-meal
+links) lives in the server.
 
 ## Lint and format
 

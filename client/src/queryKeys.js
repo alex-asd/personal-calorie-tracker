@@ -7,7 +7,8 @@ export const queryKeys = {
     days: (id) => ['sessions', 'detail', id, 'days'],
   },
   meals: {
-    list: () => ['meals'],
+    all: ['meals'],
+    list: (date) => ['meals', date],
   },
   savedMeals: {
     list: () => ['savedMeals'],
