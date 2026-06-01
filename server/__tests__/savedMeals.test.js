@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createTestApp } from './helpers/app.js';
-import { insertSavedMeal } from './helpers/seed.js';
+import { insertSavedMeal, insertCategory } from './helpers/seed.js';
 
 let app;
 
@@ -62,6 +62,30 @@ describe('POST /api/saved-meals', () => {
     expect(res.body.savedMeal.carbs).toBeNull();
     expect(res.body.savedMeal.fat).toBeNull();
   });
+
+  it('assigns a category when category_id is given', async () => {
+    const cat = insertCategory({ name: 'Breakfast' });
+    const res = await request(app)
+      .post('/api/saved-meals')
+      .send({ name: 'Oats', calories: 300, protein: 12, category_id: cat.id });
+    expect(res.status).toBe(201);
+    expect(res.body.savedMeal.category_id).toBe(cat.id);
+  });
+
+  it('defaults to no category (null) when category_id is omitted', async () => {
+    const res = await request(app)
+      .post('/api/saved-meals')
+      .send({ name: 'Oats', calories: 300, protein: 12 });
+    expect(res.body.savedMeal.category_id).toBeNull();
+  });
+
+  it('rejects a non-existent category_id', async () => {
+    const res = await request(app)
+      .post('/api/saved-meals')
+      .send({ name: 'Oats', calories: 300, protein: 12, category_id: 9999 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/category not found/);
+  });
 });
 
 describe('PUT /api/saved-meals/:id', () => {
@@ -88,6 +112,21 @@ describe('PUT /api/saved-meals/:id', () => {
       .put(`/api/saved-meals/${saved.id}`)
       .send({ name: '', calories: 100, protein: 5 });
     expect(res.status).toBe(400);
+  });
+
+  it('reassigns and clears the category', async () => {
+    const cat = insertCategory({ name: 'Lunch' });
+    const saved = insertSavedMeal({ name: 'Wrap', calories: 400, protein: 20 });
+
+    const assigned = await request(app)
+      .put(`/api/saved-meals/${saved.id}`)
+      .send({ name: 'Wrap', calories: 400, protein: 20, category_id: cat.id });
+    expect(assigned.body.savedMeal.category_id).toBe(cat.id);
+
+    const cleared = await request(app)
+      .put(`/api/saved-meals/${saved.id}`)
+      .send({ name: 'Wrap', calories: 400, protein: 20 });
+    expect(cleared.body.savedMeal.category_id).toBeNull();
   });
 });
 

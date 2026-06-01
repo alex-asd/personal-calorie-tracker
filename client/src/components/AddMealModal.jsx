@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import { formatLabel } from '../dates.js';
+import { useCategories, useCreateCategory } from '../hooks/useCategories.js';
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -30,6 +31,12 @@ export default function AddMealModal({ onClose, onAdded, date }) {
   const [fat, setFat] = useState('');
   const [saveToLibrary, setSaveToLibrary] = useState(false);
 
+  // Category selection in the "New meal" tab: '' = none, '__new__' = create inline, else an id.
+  const [newMealCategory, setNewMealCategory] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  // Category filter in the "Pick saved" tab: 'all' | 'uncategorized' | '<id>'.
+  const [filter, setFilter] = useState('all');
+
   const {
     data: savedMeals = [],
     isLoading: loadingSaved,
@@ -42,12 +49,16 @@ export default function AddMealModal({ onClose, onAdded, date }) {
     },
   });
 
+  const { data: categories = [] } = useCategories();
+  const createCategory = useCreateCategory();
+
   const addMutation = useMutation({
     mutationFn: (payload) => api.post('/api/meals', payload),
     onSuccess: (_data, variables) => {
       invalidateMealsAndDays(queryClient);
       if (variables.save_to_library) {
         queryClient.invalidateQueries({ queryKey: queryKeys.savedMeals.list() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.categories.list() });
       }
       onAdded();
     },
@@ -73,8 +84,26 @@ export default function AddMealModal({ onClose, onAdded, date }) {
     });
   }
 
-  function submitNew(e) {
+  async function submitNew(e) {
     e.preventDefault();
+
+    let categoryId = null;
+    if (saveToLibrary) {
+      if (newMealCategory === '__new__') {
+        const trimmed = newCategoryName.trim();
+        if (trimmed) {
+          try {
+            const cat = await createCategory.mutateAsync(trimmed);
+            categoryId = cat.id;
+          } catch {
+            return; // error surfaced via createCategory.error
+          }
+        }
+      } else if (newMealCategory !== '') {
+        categoryId = Number(newMealCategory);
+      }
+    }
+
     addMutation.mutate({
       name,
       calories: Number(calories),
@@ -82,13 +111,21 @@ export default function AddMealModal({ onClose, onAdded, date }) {
       carbs: carbs === '' ? null : Number(carbs),
       fat: fat === '' ? null : Number(fat),
       save_to_library: saveToLibrary,
+      ...(categoryId != null ? { category_id: categoryId } : {}),
       ...(date ? { date } : {}),
     });
   }
 
+  const uncategorizedCount = savedMeals.filter((s) => s.category_id == null).length;
+  const visibleSaved = savedMeals.filter((s) => {
+    if (filter === 'all') return true;
+    if (filter === 'uncategorized') return s.category_id == null;
+    return String(s.category_id) === filter;
+  });
+
   const newValid = name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
-  const submitting = addMutation.isPending;
-  const error = savedError?.message || addMutation.error?.message;
+  const submitting = addMutation.isPending || createCategory.isPending;
+  const error = savedError?.message || addMutation.error?.message || createCategory.error?.message;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -124,6 +161,23 @@ export default function AddMealModal({ onClose, onAdded, date }) {
 
         {mode === 'pick' && (
           <div className="tab-body">
+            {savedMeals.length > 0 && (
+              <label className="field">
+                <span>Category</span>
+                <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                  <option value="all">All meals ({savedMeals.length})</option>
+                  {uncategorizedCount > 0 && (
+                    <option value="uncategorized">Uncategorized ({uncategorizedCount})</option>
+                  )}
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.meal_count})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             {loadingSaved && <p className="muted">Loading saved meals…</p>}
             {!loadingSaved && savedMeals.length === 0 && (
               <p className="muted">
@@ -131,9 +185,12 @@ export default function AddMealModal({ onClose, onAdded, date }) {
                 one.
               </p>
             )}
-            {savedMeals.length > 0 && (
+            {!loadingSaved && savedMeals.length > 0 && visibleSaved.length === 0 && (
+              <p className="muted">No meals in this category.</p>
+            )}
+            {visibleSaved.length > 0 && (
               <ul className="saved-list">
-                {savedMeals.map((s) => (
+                {visibleSaved.map((s) => (
                   <li key={s.id}>
                     <button
                       type="button"
@@ -209,6 +266,33 @@ export default function AddMealModal({ onClose, onAdded, date }) {
               />
               <span>Also save to library</span>
             </label>
+            {saveToLibrary && (
+              <label>
+                <span>Category</span>
+                <select
+                  value={newMealCategory}
+                  onChange={(e) => setNewMealCategory(e.target.value)}
+                >
+                  <option value="">— None —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                  <option value="__new__">+ New category…</option>
+                </select>
+              </label>
+            )}
+            {saveToLibrary && newMealCategory === '__new__' && (
+              <label>
+                <span>New category name</span>
+                <input
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="e.g. Breakfast"
+                />
+              </label>
+            )}
             <button type="submit" className="primary" disabled={!newValid || submitting}>
               {submitting ? 'Adding…' : 'Add meal'}
             </button>

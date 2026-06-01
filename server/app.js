@@ -6,6 +6,7 @@ import { basicAuth } from './auth.js';
 import sessionsRouter from './routes/sessions.js';
 import mealsRouter from './routes/meals.js';
 import savedMealsRouter from './routes/savedMeals.js';
+import categoriesRouter from './routes/categories.js';
 import weightsRouter from './routes/weights.js';
 import exportRouter from './routes/export.js';
 
@@ -27,6 +28,7 @@ export function createApp({
   app.use('/api/sessions', sessionsRouter);
   app.use('/api/meals', mealsRouter);
   app.use('/api/saved-meals', savedMealsRouter);
+  app.use('/api/categories', categoriesRouter);
   app.use('/api/weights', weightsRouter);
   app.use('/api/export', exportRouter);
 

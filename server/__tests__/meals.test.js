@@ -5,6 +5,7 @@ import {
   makeSession,
   insertMeal,
   insertSavedMeal,
+  insertCategory,
   getDailyTotal,
   getMealRow,
 } from './helpers/seed.js';
@@ -136,6 +137,32 @@ describe('POST /api/meals', () => {
       .post('/api/meals')
       .send({ name: 'Smoothie', calories: 250, protein: 15, save_to_library: true });
     expect(res.body.savedMeal).toMatchObject({ name: 'Smoothie', calories: 250 });
+  });
+
+  it('files the new saved_meal under category_id when saving to library', async () => {
+    makeSession();
+    const cat = insertCategory({ name: 'Breakfast' });
+    const res = await request(app).post('/api/meals').send({
+      name: 'Smoothie',
+      calories: 250,
+      protein: 15,
+      save_to_library: true,
+      category_id: cat.id,
+    });
+    expect(res.body.savedMeal).toMatchObject({ name: 'Smoothie', category_id: cat.id });
+  });
+
+  it('rejects a non-existent category_id when saving to library', async () => {
+    makeSession();
+    const res = await request(app).post('/api/meals').send({
+      name: 'Smoothie',
+      calories: 250,
+      protein: 15,
+      save_to_library: true,
+      category_id: 9999,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/category not found/);
   });
 
   it('does not duplicate to library when source_saved_meal_id is set', async () => {

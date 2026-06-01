@@ -13,6 +13,9 @@ export const queryKeys = {
   savedMeals: {
     list: () => ['savedMeals'],
   },
+  categories: {
+    list: () => ['categories'],
+  },
   weights: {
     today: () => ['weights', 'today'],
   },

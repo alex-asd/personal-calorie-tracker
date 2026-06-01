@@ -97,6 +97,18 @@ router.post('/', (req, res) => {
   const sourceSavedMealId =
     req.body?.source_saved_meal_id != null ? Number(req.body.source_saved_meal_id) : null;
 
+  // A category only applies when creating a brand-new library entry.
+  let categoryId = null;
+  if (saveToLibrary && !sourceSavedMealId && req.body?.category_id != null && req.body?.category_id !== '') {
+    categoryId = Number(req.body.category_id);
+    if (!Number.isInteger(categoryId)) {
+      return res.status(400).json({ error: 'category_id must be an integer' });
+    }
+    if (!db.prepare(`SELECT id FROM categories WHERE id = ?`).get(categoryId)) {
+      return res.status(400).json({ error: 'category not found' });
+    }
+  }
+
   const tx = db.transaction(() => {
     const info = db
       .prepare(
@@ -117,9 +129,10 @@ router.post('/', (req, res) => {
     if (saveToLibrary && !sourceSavedMealId) {
       const s = db
         .prepare(
-          `INSERT INTO saved_meals (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)`
+          `INSERT INTO saved_meals (name, calories, protein, carbs, fat, category_id)
+           VALUES (?, ?, ?, ?, ?, ?)`
         )
-        .run(name, calories, protein, carbs, fat);
+        .run(name, calories, protein, carbs, fat, categoryId);
       savedMeal = db.prepare(`SELECT * FROM saved_meals WHERE id = ?`).get(s.lastInsertRowid);
     }
 

@@ -32,6 +32,8 @@ behind a private Tailscale network.
   the history to fix or fill it in, not just today.
 - Reuse common meals from a saved-meal library; edits to the library don't
   rewrite historical entries.
+- Organise the library with your own categories — file meals as you save them
+  and filter by category when picking one to reuse.
 - See the last 90 days of daily totals with progress bars against your
   targets.
 - Optionally log a daily weight; capture starting/ending weight when opening

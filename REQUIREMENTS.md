@@ -14,7 +14,8 @@ A single-user calorie and macro tracking web app, self-hosted on a Raspberry Pi 
 
 ## Data model
 
-- **SavedMeal** — name, calories, protein, carbs, fat. Persists across sessions. Editable and deletable by the user from the Saved Meals page.
+- **SavedMeal** — name, calories, protein, carbs, fat, and an optional category. Persists across sessions. Editable and deletable by the user from the Saved Meals page.
+- **Category** — a user-created label for organising the saved-meal library. Name only (unique, case-insensitive). A SavedMeal belongs to at most one category; meals without one are "Uncategorized". Deleting a category leaves its meals Uncategorized. Categories apply only to the library, not to logged meals.
 - **Session** — id, start date, end date (null while open), daily calorie target, daily protein target, status (`open` / `closed`), optional starting and ending weight (kg).
 - **Meal** — belongs to a session and a date; name, calories (required), protein (required), carbs (optional), fat (optional). May optionally reference the SavedMeal it was created from, but stores its own copy of the values so edits/deletes of the source SavedMeal do not affect historical entries.
 - **DailyTotal** — per-day calories and protein; retained when a session is archived and its one-time meals are deleted.
@@ -26,7 +27,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 1. **Home / Today** — today's overview, today's weight, and the 90-day history table (each history day opens an editor for that day).
 2. **Add Meal** — modal launched from Home (today) or from a day in the history table (any day of the open session).
-3. **Saved Meals** — manage the saved meal library (view, edit, delete).
+3. **Saved Meals** — manage the saved meal library (view, edit, delete) and its categories, grouped by category.
 4. **Archive** — list of closed sessions.
 5. **Session Detail** — drill-down view of one archived session.
 
@@ -48,8 +49,8 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 ### Adding a meal
 
-- Pick from the saved-meal library **or** create a new one.
-- For a new meal, a checkbox decides whether it's also added to the saved library.
+- Pick from the saved-meal library **or** create a new one. The library picker can be filtered by category.
+- For a new meal, a checkbox decides whether it's also added to the saved library. When saving to the library, the user may file it under an existing category or create a new one inline.
 - Picking a saved meal copies its numbers exactly into a new Meal entry.
 - Calories and protein required; carbs and fat optional.
 - Available for any day of the open session — today by default, or a past day chosen from the history. Dates before the session start or in the future are rejected.
@@ -72,9 +73,10 @@ Numeric values are shown next to both bars. Clicking a day opens a modal to add,
 
 ### Saved Meals page
 
-- Lists every meal in the saved library.
-- User can edit any field (name, calories, protein, carbs, fat).
+- Lists every meal in the saved library, grouped by category (with an "Uncategorized" group).
+- User can edit any field (name, calories, protein, carbs, fat) and assign a category.
 - User can delete saved meals.
+- User can create, rename, and delete categories. Deleting a category moves its meals to "Uncategorized" rather than deleting them.
 - Editing or deleting a SavedMeal does **not** retroactively change Meal entries that were created from it — those are independent copies.
 
 ### Archive page
