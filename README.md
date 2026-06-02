@@ -37,7 +37,11 @@ behind a private Tailscale network.
 - See the last 90 days of daily totals with progress bars against your
   targets.
 - Optionally log a daily weight; capture starting/ending weight when opening
-  and closing a session.
+  and closing a session, and an optional goal weight for the session.
+- See a weight progress chart on Home — plots starting weight + each daily
+  log over time, with a dashed goal line (if a goal weight is set), a faint
+  trend line, and stats for change-from-start, distance-to-goal, and the
+  weekly trend rate.
 - Close a session to archive it (daily totals are kept; individual meal
   rows are pruned).
 - Export the current open session as pretty-printed JSON.
