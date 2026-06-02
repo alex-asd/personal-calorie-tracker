@@ -17,6 +17,8 @@ export const queryKeys = {
     list: () => ['categories'],
   },
   weights: {
+    all: ['weights'],
     today: () => ['weights', 'today'],
+    history: (sessionId) => ['weights', 'history', sessionId],
   },
 };
