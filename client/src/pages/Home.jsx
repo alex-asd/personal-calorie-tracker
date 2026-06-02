@@ -67,8 +67,6 @@ export default function Home() {
             )}
           </header>
           <SessionHeader />
-          <WeightLogger disabled={session.blocked} />
-          <WeightChart />
           <TodayTotals meals={meals} session={session} />
           <MealList
             meals={meals}
@@ -76,6 +74,8 @@ export default function Home() {
             error={mealsQuery.error}
             canEdit={!session.blocked}
           />
+          <WeightLogger disabled={session.blocked} />
+          <WeightChart />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable days={days} session={session} onSelectDay={setSelectedDate} />
         </>
