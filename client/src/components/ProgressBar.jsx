@@ -1,13 +1,20 @@
+function caloriesHue(pct) {
+  if (pct <= 75) return 120;
+  if (pct >= 100) return 0;
+  return 120 * (1 - (pct - 75) / 25);
+}
+
+function proteinHue(pct) {
+  const p = Math.min(100, pct);
+  if (p <= 50) return (30 / 50) * p; // red -> orange
+  return 30 + (90 / 50) * (p - 50); // orange -> green
+}
+
 export default function ProgressBar({ value, target, variant }) {
   const safeTarget = target > 0 ? target : 0;
-  const pct = safeTarget > 0 ? Math.min(100, (value / safeTarget) * 100) : 0;
-
-  let colorClass;
-  if (variant === 'calories') {
-    colorClass = value > safeTarget ? 'bar-red' : 'bar-green';
-  } else {
-    colorClass = value >= safeTarget ? 'bar-green' : 'bar-red';
-  }
+  const ratio = safeTarget > 0 ? (value / safeTarget) * 100 : 0;
+  const pct = Math.min(100, ratio);
+  const hue = variant === 'calories' ? caloriesHue(pct) : proteinHue(pct);
 
   return (
     <div
@@ -17,7 +24,7 @@ export default function ProgressBar({ value, target, variant }) {
       aria-valuemax={safeTarget}
       aria-valuemin={0}
     >
-      <div className={`fill ${colorClass}`} style={{ width: `${pct}%` }} />
+      <div className="fill" style={{ width: `${pct}%`, '--bar-hue': hue }} />
     </div>
   );
 }
