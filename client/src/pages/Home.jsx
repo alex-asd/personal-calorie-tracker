@@ -12,6 +12,7 @@ import AddMealModal from '../components/AddMealModal.jsx';
 import DayHistoryTable from '../components/DayHistoryTable.jsx';
 import DayDetailModal from '../components/DayDetailModal.jsx';
 import WeightLogger from '../components/WeightLogger.jsx';
+import WeightChart from '../components/WeightChart.jsx';
 
 export default function Home() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useSession();
@@ -66,7 +67,6 @@ export default function Home() {
             )}
           </header>
           <SessionHeader />
-          <WeightLogger disabled={session.blocked} />
           <TodayTotals meals={meals} session={session} />
           <MealList
             meals={meals}
@@ -74,6 +74,8 @@ export default function Home() {
             error={mealsQuery.error}
             canEdit={!session.blocked}
           />
+          <WeightLogger disabled={session.blocked} />
+          <WeightChart />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable days={days} session={session} onSelectDay={setSelectedDate} />
         </>

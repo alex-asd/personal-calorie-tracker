@@ -33,7 +33,7 @@ Routers map 1:1 to the data model:
 - `/api/meals` — list/add/edit/delete meals for the open session.
 - `/api/saved-meals` — manage the reusable meal library (each meal optionally filed under one category).
 - `/api/categories` — user-created categories for the saved-meal library (CRUD; names unique case-insensitively).
-- `/api/weights` — daily weight log (one entry per day, replace-by-delete).
+- `/api/weights` — `GET /api/weights` returns the open session's full weight history (`start_weight_kg`, `goal_weight_kg`, and the daily logs ascending by date) for the Home weight-progress chart. `GET /today`, `POST /`, `DELETE /today` cover the per-day log (one entry per day, replace-by-delete).
 - `/api/export` — pretty-printed JSON dump of the current open session.
 
 `server/db.js` owns the schema. Tables: `sessions`, `saved_meals`, `meals`, `daily_totals`, `daily_weights`, `categories`. Key constraints:
@@ -42,7 +42,8 @@ Routers map 1:1 to the data model:
 - `meals` carry their own nutrition copy plus an optional `source_saved_meal_id` (`ON DELETE SET NULL`) so editing/deleting a SavedMeal never mutates historical entries.
 - `saved_meals.category_id` is an optional FK to `categories` (`ON DELETE SET NULL`), so deleting a category just drops its meals back to "Uncategorized" (null). Categories apply **only** to the saved-meal library — logged `meals` are never categorized. `categories.name` is `UNIQUE COLLATE NOCASE`.
 - `daily_totals` is maintained incrementally inside transactions in `routes/meals.js` (insert adds, edit applies the delta, delete subtracts). It is **not** recomputed from `meals` — the source of truth for archived-session day totals is `daily_totals`, which is why closing a session deletes `meals` but keeps `daily_totals`.
-- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`, `003_meal_categories.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and records all existing files as applied without re-running them; that branch is one-shot and never fires again on the same DB.
+- `sessions.goal_weight_kg` is an optional REAL set at session creation (added in migration `004`). It's purely a display target for the Home weight-progress chart — nothing on the server enforces or compares against it.
+- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`, `003_meal_categories.sql`, `004_session_goal_weight.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and records all existing files as applied without re-running them; that branch is one-shot and never fires again on the same DB.
 - `initDb({ dbPath } = {})` accepts an override path; tests pass `':memory:'` for isolation. WAL mode is skipped for in-memory databases. `closeDb()` is exported for test teardown / reset.
 
 `server/dates.js` deliberately uses local-timezone `YYYY-MM-DD` strings (not `toISOString()` / UTC). Day boundaries follow the Pi's local clock. All date comparisons across the codebase are string comparisons on this format — keep it that way.
@@ -74,6 +75,7 @@ On the client, the Home History table (`DayHistoryTable`) rows are clickable (vi
 - `api.js` is a tiny `fetch` wrapper that throws `Error(data.error || 'HTTP <status>')`. Server endpoints consistently return `{ error: '...' }` on failure; preserve that shape when adding routes so client error messages stay useful. `api.js` is the `queryFn` / `mutationFn` body throughout.
 - Pages live in `pages/`, reusable UI in `components/`. The Add Meal flow is a modal (`AddMealModal.jsx`) launched from `Home.jsx` (or from `DayDetailModal.jsx` with a `date` prop for past days).
 - Meal reads are keyed per date: `queryKeys.meals.list(date)`. Home reads today (`meals.list(todayString())`); `DayDetailModal` reads its day. All meal mutations invalidate the `queryKeys.meals.all` (`['meals']`) prefix, which matches every date sub-key. Local date helpers (`todayString`, `formatLabel`, `parseLocal`, `shiftDateString`) live in `client/src/dates.js`.
+- Home section order is `SessionHeader` → `TodayTotals` → `MealList` → `WeightLogger` → `WeightChart` → `DayHistoryTable`. `WeightChart` is a self-fetching component that calls the new `GET /api/weights` endpoint, keyed by `queryKeys.weights.history(sessionId)`, and renders a hand-rolled SVG (no chart-lib dependency) — area + line through the points, dashed goal line when `session.goal_weight_kg` is set, faint linear-regression trend line, hover/touch crosshair tooltip, and headline stats (current / from start / to goal / weekly trend). Empty and single-point states fall back to a short text message.
 
 #### Mutation → cache invalidation map
 
@@ -89,8 +91,8 @@ When adding a new mutation, update this table and the mutation's `onSuccess`. `c
 | Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected           |
 | Category create/rename        | `categories.list()` only                                                                                  |
 | Category delete               | `categories.list()` **and** `savedMeals.list()` (its meals get `category_id = NULL` server-side)          |
-| Log weight                    | sets `weights.today()` directly (no refetch)                                                              |
-| Clear weight                  | sets `weights.today()` to `null`                                                                          |
+| Log weight                    | sets `weights.today()` directly; invalidates `weights.all` (refreshes `weights.history(sessionId)` for the chart) |
+| Clear weight                  | sets `weights.today()` to `null`; invalidates `weights.all`                                              |
 
 ### Tests (`server/__tests__/`)
 

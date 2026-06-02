@@ -11,6 +11,43 @@ beforeEach(() => {
   app = createTestApp();
 });
 
+describe('GET /api/weights', () => {
+  it('returns 404 when no open session', async () => {
+    const res = await request(app).get('/api/weights');
+    expect(res.status).toBe(404);
+  });
+
+  it('returns session weight context and an empty list when nothing is logged', async () => {
+    const session = makeSession({ start_weight_kg: 80, goal_weight_kg: 75 });
+    const res = await request(app).get('/api/weights');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      session_id: session.id,
+      start_date: session.start_date,
+      start_weight_kg: 80,
+      goal_weight_kg: 75,
+      weights: [],
+    });
+  });
+
+  it('returns daily weights sorted ascending by date', async () => {
+    const session = makeSession({ startDaysAgo: 5 });
+    const db = getDb();
+    const insert = db.prepare(
+      `INSERT INTO daily_weights (session_id, date, weight_kg) VALUES (?, ?, ?)`
+    );
+    insert.run(session.id, today(), 79);
+    insert.run(session.id, session.start_date, 80.5);
+
+    const res = await request(app).get('/api/weights');
+    expect(res.status).toBe(200);
+    expect(res.body.weights).toEqual([
+      { date: session.start_date, weight_kg: 80.5 },
+      { date: today(), weight_kg: 79 },
+    ]);
+  });
+});
+
 describe('GET /api/weights/today', () => {
   it('returns 404 when no open session', async () => {
     const res = await request(app).get('/api/weights/today');

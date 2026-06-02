@@ -15,6 +15,24 @@ function isBlocked(session) {
   return dayNumber > MAX_DAYS;
 }
 
+router.get('/', (req, res) => {
+  const db = getDb();
+  const session = getOpenSession(db);
+  if (!session) return res.status(404).json({ error: 'no open session' });
+
+  const weights = db
+    .prepare(`SELECT date, weight_kg FROM daily_weights WHERE session_id = ? ORDER BY date ASC`)
+    .all(session.id);
+
+  res.json({
+    session_id: session.id,
+    start_date: session.start_date,
+    start_weight_kg: session.start_weight_kg,
+    goal_weight_kg: session.goal_weight_kg,
+    weights,
+  });
+});
+
 router.get('/today', (req, res) => {
   const db = getDb();
   const session = getOpenSession(db);
