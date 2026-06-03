@@ -6,8 +6,8 @@ function caloriesHue(pct) {
 
 function proteinHue(pct) {
   const p = Math.min(100, pct);
-  if (p <= 50) return (30 / 50) * p; // red -> orange
-  return 30 + (90 / 50) * (p - 50); // orange -> green
+  if (p <= 50) return (30 / 50) * p;
+  return 30 + (90 / 50) * (p - 50);
 }
 
 export default function ProgressBar({ value, target, variant, phase = 'cut' }) {
