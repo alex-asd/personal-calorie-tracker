@@ -755,6 +755,10 @@ button.danger {
   gap: 0.5rem;
 }
 
+.totals-grid + .day-bars {
+  margin-top: 1rem;
+}
+
 .bar-row {
   display: grid;
   grid-template-columns: 1fr auto;

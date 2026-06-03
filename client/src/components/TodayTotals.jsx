@@ -1,3 +1,5 @@
+import ProgressBar from './ProgressBar.jsx';
+
 function sum(meals, key) {
   return meals.reduce((acc, m) => acc + (Number(m[key]) || 0), 0);
 }
@@ -32,6 +34,27 @@ export default function TodayTotals({ meals, session }) {
         <div className="total">
           <div className="muted small">Fat</div>
           <div className="value">{Math.round(fat)}g</div>
+        </div>
+      </div>
+      <div className="day-bars">
+        <div className="bar-row">
+          <ProgressBar
+            value={calories}
+            target={session.calorie_target}
+            variant="calories"
+            phase={session.phase}
+          />
+          <div className="bar-numeric">
+            {Math.round(calories)}
+            <span className="muted"> / {session.calorie_target}</span>
+          </div>
+        </div>
+        <div className="bar-row">
+          <ProgressBar value={protein} target={session.protein_target} variant="protein" />
+          <div className="bar-numeric">
+            {Math.round(protein)}g
+            <span className="muted"> / {session.protein_target}g</span>
+          </div>
         </div>
       </div>
     </section>

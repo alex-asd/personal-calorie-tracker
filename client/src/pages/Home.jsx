@@ -39,6 +39,7 @@ export default function Home() {
 
   const meals = mealsQuery.data ?? [];
   const days = daysQuery.data ?? [];
+  const pastDays = days.filter((d) => d.date !== todayString());
 
   if (sessionLoading) {
     return (
@@ -77,7 +78,7 @@ export default function Home() {
           <WeightLogger disabled={session.blocked} />
           <WeightChart />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
-          <DayHistoryTable days={days} session={session} onSelectDay={setSelectedDate} />
+          <DayHistoryTable days={pastDays} session={session} onSelectDay={setSelectedDate} />
         </>
       )}
 
