@@ -35,7 +35,12 @@ export default function SessionHeader() {
     <section className="card session-header">
       <div className="row">
         <div>
-          <h2>Session · day {session.dayNumber} of 90</h2>
+          <h2>
+            Session · day {session.dayNumber} of 90
+            {session.phase && (
+              <span className={`phase-badge phase-${session.phase}`}>{session.phase}</span>
+            )}
+          </h2>
           <p className="muted">
             Started {session.start_date} · {session.calorie_target} kcal / {session.protein_target}g
             protein

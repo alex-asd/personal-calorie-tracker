@@ -67,6 +67,30 @@ describe('POST /api/sessions', () => {
     expect(res.body.error).toMatch(/start_weight_kg/);
   });
 
+  it("defaults phase to 'cut' when omitted", async () => {
+    const res = await request(app)
+      .post('/api/sessions')
+      .send({ calorie_target: 2000, protein_target: 150 });
+    expect(res.status).toBe(201);
+    expect(res.body.session.phase).toBe('cut');
+  });
+
+  it("accepts phase='bulk'", async () => {
+    const res = await request(app)
+      .post('/api/sessions')
+      .send({ calorie_target: 3200, protein_target: 180, phase: 'bulk' });
+    expect(res.status).toBe(201);
+    expect(res.body.session.phase).toBe('bulk');
+  });
+
+  it('rejects an unknown phase value', async () => {
+    const res = await request(app)
+      .post('/api/sessions')
+      .send({ calorie_target: 2000, protein_target: 150, phase: 'maintenance' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/phase/);
+  });
+
   it('returns 409 when an open session already exists', async () => {
     makeSession();
     const res = await request(app)

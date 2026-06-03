@@ -6,6 +6,7 @@ export default function CreateSessionForm() {
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [weight, setWeight] = useState('');
+  const [phase, setPhase] = useState('cut');
 
   const valid =
     Number(calories) > 0 && Number(protein) > 0 && (weight === '' || Number(weight) > 0);
@@ -17,6 +18,7 @@ export default function CreateSessionForm() {
       calorie_target: Number(calories),
       protein_target: Number(protein),
       start_weight_kg: weight === '' ? null : Number(weight),
+      phase,
     });
   }
 
@@ -28,6 +30,31 @@ export default function CreateSessionForm() {
       <h2>Start a new session</h2>
       <p className="muted">A session spans up to 90 days. Set your daily targets to begin.</p>
       <form onSubmit={onSubmit} className="form">
+        <fieldset className="phase-picker">
+          <legend>Phase</legend>
+          <label className={`phase-option ${phase === 'cut' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="phase"
+              value="cut"
+              checked={phase === 'cut'}
+              onChange={() => setPhase('cut')}
+            />
+            <span className="phase-option-title">Cut</span>
+            <span className="phase-option-sub">Calories are a ceiling — staying under is good.</span>
+          </label>
+          <label className={`phase-option ${phase === 'bulk' ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="phase"
+              value="bulk"
+              checked={phase === 'bulk'}
+              onChange={() => setPhase('bulk')}
+            />
+            <span className="phase-option-title">Bulk</span>
+            <span className="phase-option-sub">Calories are a floor — hitting the target is good.</span>
+          </label>
+        </fieldset>
         <label>
           <span>Daily calorie target</span>
           <input

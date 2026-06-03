@@ -241,6 +241,84 @@ h2 {
   border-color: var(--accent);
 }
 
+/* Cut / Bulk phase picker on the create-session form */
+.phase-picker {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem 0.75rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.phase-picker legend {
+  padding: 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.phase-option {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  column-gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  cursor: pointer;
+  background: var(--surface-2);
+}
+
+.phase-option:hover {
+  border-color: var(--accent);
+}
+
+.phase-option.active {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.phase-option input[type='radio'] {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.phase-option-title {
+  font-weight: 600;
+}
+
+.phase-option-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Phase badge in the session header */
+.phase-badge {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+}
+
+.phase-badge.phase-cut {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.phase-badge.phase-bulk {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 50%, transparent);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
 /* Standalone labelled field (e.g. the category filter in the Pick-saved tab) */
 .field {
   display: flex;

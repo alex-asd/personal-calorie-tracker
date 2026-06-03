@@ -26,6 +26,9 @@ behind a private Tailscale network.
 ## What you can do with it
 
 - Run a "session" (up to 90 days) with daily calorie and protein targets.
+  Pick whether the session is a **cut** (calorie target is a ceiling) or a
+  **bulk** (calorie target is a floor) — the daily-history calories bar
+  colours itself accordingly.
 - Log meals one at a time. Calories and protein are required; carbs and fat
   are optional.
 - Edit or backfill meals for any day of the open session — open a day from

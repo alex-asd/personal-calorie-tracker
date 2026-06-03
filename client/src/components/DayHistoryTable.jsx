@@ -38,6 +38,7 @@ export default function DayHistoryTable({ days, session, showRelative = true, on
                   value={d.calories}
                   target={session.calorie_target}
                   variant="calories"
+                  phase={session.phase}
                 />
                 <div className="bar-numeric">
                   {Math.round(d.calories)}

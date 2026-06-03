@@ -26,7 +26,7 @@ router.get('/current', (req, res) => {
 
 router.post('/', (req, res) => {
   const db = getDb();
-  const { calorie_target, protein_target, start_weight_kg } = req.body ?? {};
+  const { calorie_target, protein_target, start_weight_kg, phase } = req.body ?? {};
 
   const calories = Number(calorie_target);
   const protein = Number(protein_target);
@@ -47,6 +47,14 @@ router.post('/', (req, res) => {
     startWeight = w;
   }
 
+  let phaseValue = 'cut';
+  if (phase !== undefined && phase !== null && phase !== '') {
+    if (phase !== 'cut' && phase !== 'bulk') {
+      return res.status(400).json({ error: "phase must be 'cut' or 'bulk'" });
+    }
+    phaseValue = phase;
+  }
+
   const existing = db.prepare(`SELECT id FROM sessions WHERE status = 'open' LIMIT 1`).get();
   if (existing) {
     return res
@@ -56,10 +64,11 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      `INSERT INTO sessions (start_date, calorie_target, protein_target, status, start_weight_kg)
-       VALUES (?, ?, ?, 'open', ?)`
+      `INSERT INTO sessions
+         (start_date, calorie_target, protein_target, status, start_weight_kg, phase)
+       VALUES (?, ?, ?, 'open', ?, ?)`
     )
-    .run(today(), Math.round(calories), Math.round(protein), startWeight);
+    .run(today(), Math.round(calories), Math.round(protein), startWeight, phaseValue);
 
   const session = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(info.lastInsertRowid);
   res.status(201).json({ session: decorate(session) });

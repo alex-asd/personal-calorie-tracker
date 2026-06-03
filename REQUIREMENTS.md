@@ -16,7 +16,7 @@ A single-user calorie and macro tracking web app, self-hosted on a Raspberry Pi 
 
 - **SavedMeal** — name, calories, protein, carbs, fat, and an optional category. Persists across sessions. Editable and deletable by the user from the Saved Meals page.
 - **Category** — a user-created label for organising the saved-meal library. Name only (unique, case-insensitive). A SavedMeal belongs to at most one category; meals without one are "Uncategorized". Deleting a category leaves its meals Uncategorized. Categories apply only to the library, not to logged meals.
-- **Session** — id, start date, end date (null while open), daily calorie target, daily protein target, status (`open` / `closed`), optional starting and ending weight (kg).
+- **Session** — id, start date, end date (null while open), daily calorie target, daily protein target, status (`open` / `closed`), phase (`cut` / `bulk`, default `cut`), optional starting and ending weight (kg). The phase decides how the calorie target is interpreted (ceiling for a cut, floor for a bulk) and only affects display colouring — no other behaviour is gated on it.
 - **Meal** — belongs to a session and a date; name, calories (required), protein (required), carbs (optional), fat (optional). May optionally reference the SavedMeal it was created from, but stores its own copy of the values so edits/deletes of the source SavedMeal do not affect historical entries.
 - **DailyTotal** — per-day calories and protein; retained when a session is archived and its one-time meals are deleted.
 - **DailyWeight** — per-day weight (kg) for the open session. At most one entry per day. Deleted when the session is closed; only the session's starting/ending weight survives in the archive.
@@ -37,6 +37,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 - Prompt the user to create a new session.
 - Capture daily calorie target and daily protein target at creation time.
+- Capture the session's phase: **Cut** (calories are a ceiling — staying under is good) or **Bulk** (calories are a floor — hitting the target is good). Defaults to Cut.
 - Optionally capture a starting weight (kg).
 
 ### Home — today's overview
@@ -59,8 +60,8 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 Up to the last 90 days of the current session. For each day, show total calories and total protein with progress bars against the session's targets:
 
-- **Calories bar** — green while at/under the target; red (full) once over.
-- **Protein bar** — red while under target; green once the target is met or exceeded.
+- **Calories bar** — phase-aware. On a **cut**, green while at/under the target and red (full) once over. On a **bulk**, the scale is reversed: red while under the target, green once the target is met or exceeded.
+- **Protein bar** — red while under target; green once the target is met or exceeded. Behaviour is the same in both phases (you want to eat enough protein either way).
 
 Numeric values are shown next to both bars. Clicking a day opens a modal to add, edit, or delete that day's meals (open session only; archived sessions stay read-only).
 
