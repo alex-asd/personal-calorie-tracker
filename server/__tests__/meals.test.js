@@ -165,6 +165,18 @@ describe('POST /api/meals', () => {
     expect(res.body.error).toMatch(/category not found/);
   });
 
+  it('silently ignores category_id when save_to_library is false', async () => {
+    makeSession();
+    // category_id 9999 does not exist, but should not be validated when
+    // save_to_library is omitted/false — the meal goes in without a saved-meal copy.
+    const res = await request(app)
+      .post('/api/meals')
+      .send({ name: 'Snack', calories: 200, protein: 10, category_id: 9999 });
+    expect(res.status).toBe(201);
+    expect(res.body.savedMeal).toBeNull();
+    expect(res.body.meal).toMatchObject({ name: 'Snack', calories: 200, protein: 10 });
+  });
+
   it('does not duplicate to library when source_saved_meal_id is set', async () => {
     makeSession();
     const saved = insertSavedMeal({ name: 'Yogurt', calories: 150, protein: 10 });
@@ -306,6 +318,15 @@ describe('PUT /api/meals/:id', () => {
       .send({ name: 'x', calories: 100, protein: 5 });
     expect(res.status).toBe(404);
   });
+
+  it('returns 400 for a non-integer meal id', async () => {
+    makeSession();
+    const res = await request(app)
+      .put('/api/meals/abc')
+      .send({ name: 'x', calories: 100, protein: 5 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalid meal id/);
+  });
 });
 
 describe('DELETE /api/meals/:id', () => {
@@ -361,5 +382,12 @@ describe('DELETE /api/meals/:id', () => {
     makeSession();
     const res = await request(app).delete('/api/meals/9999');
     expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer meal id', async () => {
+    makeSession();
+    const res = await request(app).delete('/api/meals/abc');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalid meal id/);
   });
 });

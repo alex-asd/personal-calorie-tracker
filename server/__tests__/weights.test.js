@@ -30,6 +30,15 @@ describe('GET /api/weights', () => {
     });
   });
 
+  it('returns null for start_weight_kg and goal_weight_kg when the session did not set them', async () => {
+    makeSession();
+    const res = await request(app).get('/api/weights');
+    expect(res.status).toBe(200);
+    expect(res.body.start_weight_kg).toBeNull();
+    expect(res.body.goal_weight_kg).toBeNull();
+    expect(res.body.weights).toEqual([]);
+  });
+
   it('returns daily weights sorted ascending by date', async () => {
     const session = makeSession({ startDaysAgo: 5 });
     const db = getDb();

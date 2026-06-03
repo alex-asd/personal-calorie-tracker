@@ -86,6 +86,14 @@ describe('POST /api/saved-meals', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/category not found/);
   });
+
+  it('rejects a non-integer category_id', async () => {
+    const res = await request(app)
+      .post('/api/saved-meals')
+      .send({ name: 'Oats', calories: 300, protein: 12, category_id: 'abc' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/category_id must be an integer/);
+  });
 });
 
 describe('PUT /api/saved-meals/:id', () => {
@@ -104,6 +112,13 @@ describe('PUT /api/saved-meals/:id', () => {
       .put('/api/saved-meals/9999')
       .send({ name: 'x', calories: 100, protein: 5 });
     expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer id', async () => {
+    const res = await request(app)
+      .put('/api/saved-meals/abc')
+      .send({ name: 'x', calories: 100, protein: 5 });
+    expect(res.status).toBe(400);
   });
 
   it('returns 400 on validation failure', async () => {
@@ -143,5 +158,10 @@ describe('DELETE /api/saved-meals/:id', () => {
   it('returns 404 for unknown id', async () => {
     const res = await request(app).delete('/api/saved-meals/9999');
     expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer id', async () => {
+    const res = await request(app).delete('/api/saved-meals/abc');
+    expect(res.status).toBe(400);
   });
 });

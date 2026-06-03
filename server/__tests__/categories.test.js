@@ -77,6 +77,11 @@ describe('PUT /api/categories/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.category.name).toBe('LUNCH');
   });
+
+  it('returns 400 for a non-integer id', async () => {
+    const res = await request(app).put('/api/categories/abc').send({ name: 'x' });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('DELETE /api/categories/:id', () => {
@@ -97,5 +102,10 @@ describe('DELETE /api/categories/:id', () => {
   it('returns 404 for unknown id', async () => {
     const res = await request(app).delete('/api/categories/9999');
     expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer id', async () => {
+    const res = await request(app).delete('/api/categories/abc');
+    expect(res.status).toBe(400);
   });
 });

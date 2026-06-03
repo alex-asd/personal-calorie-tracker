@@ -147,6 +147,12 @@ describe('GET /api/sessions/current', () => {
     expect(res.body.session.warning).toBe(false);
     expect(res.body.session.blocked).toBe(true);
   });
+
+  it('returns phase on a bulk session', async () => {
+    makeSession({ phase: 'bulk' });
+    const res = await request(app).get('/api/sessions/current');
+    expect(res.body.session.phase).toBe('bulk');
+  });
 });
 
 describe('POST /api/sessions/:id/close', () => {
@@ -213,6 +219,27 @@ describe('POST /api/sessions/:id/close', () => {
       .send({ end_weight_kg: -1 });
     expect(res.status).toBe(400);
   });
+
+  it('returns 400 for a non-integer session id', async () => {
+    const res = await request(app).post('/api/sessions/abc/close').send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('preserves phase, start_weight_kg, and goal_weight_kg on close', async () => {
+    const session = makeSession({
+      phase: 'bulk',
+      start_weight_kg: 80,
+      goal_weight_kg: 85,
+    });
+    const res = await request(app).post(`/api/sessions/${session.id}/close`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.session).toMatchObject({
+      status: 'closed',
+      phase: 'bulk',
+      start_weight_kg: 80,
+      goal_weight_kg: 85,
+    });
+  });
 });
 
 describe('GET /api/sessions', () => {
@@ -233,6 +260,58 @@ describe('GET /api/sessions', () => {
       status: 'closed',
       day_count: 10,
     });
+  });
+
+  it('includes phase on each closed session', async () => {
+    makeSession({
+      status: 'closed',
+      end_date: today(),
+      startDaysAgo: 5,
+      phase: 'bulk',
+    });
+    const res = await request(app).get('/api/sessions');
+    expect(res.body.sessions[0].phase).toBe('bulk');
+  });
+});
+
+describe('GET /api/sessions/:id', () => {
+  it('returns an open session', async () => {
+    const session = makeSession({ phase: 'cut' });
+    const res = await request(app).get(`/api/sessions/${session.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.session).toMatchObject({
+      id: session.id,
+      status: 'open',
+      phase: 'cut',
+    });
+  });
+
+  it('returns a closed bulk session with phase intact', async () => {
+    const session = makeSession({
+      status: 'closed',
+      end_date: today(),
+      startDaysAgo: 5,
+      phase: 'bulk',
+      goal_weight_kg: 85,
+    });
+    const res = await request(app).get(`/api/sessions/${session.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.session).toMatchObject({
+      id: session.id,
+      status: 'closed',
+      phase: 'bulk',
+      goal_weight_kg: 85,
+    });
+  });
+
+  it('returns 404 for an unknown id', async () => {
+    const res = await request(app).get('/api/sessions/9999');
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer id', async () => {
+    const res = await request(app).get('/api/sessions/abc');
+    expect(res.status).toBe(400);
   });
 });
 
@@ -265,5 +344,10 @@ describe('GET /api/sessions/:id/days', () => {
   it('returns 404 for unknown session id', async () => {
     const res = await request(app).get('/api/sessions/9999/days');
     expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a non-integer session id', async () => {
+    const res = await request(app).get('/api/sessions/abc/days');
+    expect(res.status).toBe(400);
   });
 });
