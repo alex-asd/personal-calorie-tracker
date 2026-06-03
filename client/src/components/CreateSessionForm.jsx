@@ -15,6 +15,13 @@ export default function CreateSessionForm() {
     (weight === '' || Number(weight) > 0) &&
     (goalWeight === '' || Number(goalWeight) > 0);
 
+  // Placeholders model the selected phase: a bulk eats in a surplus toward a
+  // higher goal weight, a cut eats in a deficit toward a lower one.
+  const placeholders =
+    phase === 'bulk'
+      ? { calories: 'e.g. 3000', protein: 'e.g. 180', weight: 'e.g. 75.5', goalWeight: 'e.g. 80.0' }
+      : { calories: 'e.g. 2200', protein: 'e.g. 160', weight: 'e.g. 75.5', goalWeight: 'e.g. 72.0' };
+
   function onSubmit(e) {
     e.preventDefault();
     if (!valid) return;
@@ -68,7 +75,7 @@ export default function CreateSessionForm() {
             step="1"
             value={calories}
             onChange={(e) => setCalories(e.target.value)}
-            placeholder="e.g. 2200"
+            placeholder={placeholders.calories}
             required
             autoFocus
           />
@@ -81,7 +88,7 @@ export default function CreateSessionForm() {
             step="1"
             value={protein}
             onChange={(e) => setProtein(e.target.value)}
-            placeholder="e.g. 160"
+            placeholder={placeholders.protein}
             required
           />
         </label>
@@ -93,7 +100,7 @@ export default function CreateSessionForm() {
             step="0.1"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
-            placeholder="e.g. 75.5"
+            placeholder={placeholders.weight}
           />
         </label>
         <label>
@@ -104,7 +111,7 @@ export default function CreateSessionForm() {
             step="0.1"
             value={goalWeight}
             onChange={(e) => setGoalWeight(e.target.value)}
-            placeholder="e.g. 72.0"
+            placeholder={placeholders.goalWeight}
           />
         </label>
         {error && <p className="error">{error.message}</p>}
