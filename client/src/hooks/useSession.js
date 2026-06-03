@@ -15,11 +15,19 @@ export function useSession() {
 export function useCreateSession() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ calorie_target, protein_target, start_weight_kg }) => {
+    mutationFn: async ({
+      calorie_target,
+      protein_target,
+      start_weight_kg,
+      goal_weight_kg,
+      phase,
+    }) => {
       const { session } = await api.post('/api/sessions', {
         calorie_target,
         protein_target,
         start_weight_kg,
+        goal_weight_kg,
+        phase,
       });
       return session;
     },
