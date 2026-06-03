@@ -1,19 +1,26 @@
+function caloriesHue(pct) {
+  if (pct <= 75) return 120;
+  if (pct >= 100) return 0;
+  return 120 * (1 - (pct - 75) / 25);
+}
+
+function proteinHue(pct) {
+  const p = Math.min(100, pct);
+  if (p <= 50) return (30 / 50) * p; // red -> orange
+  return 30 + (90 / 50) * (p - 50); // orange -> green
+}
+
 export default function ProgressBar({ value, target, variant, phase = 'cut' }) {
   const safeTarget = target > 0 ? target : 0;
-  const pct = safeTarget > 0 ? Math.min(100, (value / safeTarget) * 100) : 0;
-
-  // Calories on a cut: staying under is good — green up to the target, red once over.
-  // Calories on a bulk: reaching the target is good, so the scale mirrors the protein bar.
-  // Protein in either phase: hitting the target is good — red until met, green at/above.
-  let colorClass;
+  const ratio = safeTarget > 0 ? (value / safeTarget) * 100 : 0;
+  const pct = Math.min(100, ratio);
+  // On a bulk the calorie target is a floor — mirror the protein curve so
+  // the bar rises from red toward green as the target is met.
+  let hue;
   if (variant === 'calories') {
-    if (phase === 'bulk') {
-      colorClass = value >= safeTarget ? 'bar-green' : 'bar-red';
-    } else {
-      colorClass = value > safeTarget ? 'bar-red' : 'bar-green';
-    }
+    hue = phase === 'bulk' ? proteinHue(pct) : caloriesHue(pct);
   } else {
-    colorClass = value >= safeTarget ? 'bar-green' : 'bar-red';
+    hue = proteinHue(pct);
   }
 
   return (
@@ -24,7 +31,7 @@ export default function ProgressBar({ value, target, variant, phase = 'cut' }) {
       aria-valuemax={safeTarget}
       aria-valuemin={0}
     >
-      <div className={`fill ${colorClass}`} style={{ width: `${pct}%` }} />
+      <div className="fill" style={{ width: `${pct}%`, '--bar-hue': hue }} />
     </div>
   );
 }

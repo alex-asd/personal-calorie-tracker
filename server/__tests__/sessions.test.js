@@ -67,6 +67,22 @@ describe('POST /api/sessions', () => {
     expect(res.body.error).toMatch(/start_weight_kg/);
   });
 
+  it('accepts optional goal_weight_kg', async () => {
+    const res = await request(app)
+      .post('/api/sessions')
+      .send({ calorie_target: 2000, protein_target: 150, goal_weight_kg: 72.5 });
+    expect(res.status).toBe(201);
+    expect(res.body.session.goal_weight_kg).toBe(72.5);
+  });
+
+  it('rejects negative goal_weight_kg', async () => {
+    const res = await request(app)
+      .post('/api/sessions')
+      .send({ calorie_target: 2000, protein_target: 150, goal_weight_kg: -1 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/goal_weight_kg/);
+  });
+
   it("defaults phase to 'cut' when omitted", async () => {
     const res = await request(app)
       .post('/api/sessions')

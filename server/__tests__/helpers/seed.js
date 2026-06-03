@@ -6,6 +6,7 @@ export function makeSession({
   calorie_target = 2000,
   protein_target = 150,
   start_weight_kg = null,
+  goal_weight_kg = null,
   status = 'open',
   end_date = null,
   end_weight_kg = null,
@@ -17,8 +18,8 @@ export function makeSession({
     .prepare(
       `INSERT INTO sessions
          (start_date, end_date, calorie_target, protein_target, status,
-          start_weight_kg, end_weight_kg, phase)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          start_weight_kg, end_weight_kg, goal_weight_kg, phase)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       start_date,
@@ -28,6 +29,7 @@ export function makeSession({
       status,
       start_weight_kg,
       end_weight_kg,
+      goal_weight_kg,
       phase
     );
   return db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(info.lastInsertRowid);

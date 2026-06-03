@@ -23,6 +23,7 @@ export default function WeightLogger({ disabled = false }) {
     mutationFn: (weight_kg) => api.post('/api/weights', { weight_kg }),
     onSuccess: ({ weight }) => {
       queryClient.setQueryData(queryKeys.weights.today(), weight);
+      queryClient.invalidateQueries({ queryKey: queryKeys.weights.all });
       setInput('');
     },
   });
@@ -31,6 +32,7 @@ export default function WeightLogger({ disabled = false }) {
     mutationFn: () => api.delete('/api/weights/today'),
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.weights.today(), null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.weights.all });
     },
   });
 
