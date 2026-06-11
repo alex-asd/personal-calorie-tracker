@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSession, useCloseSession } from '../hooks/useSession.js';
+import { BASE_PATH } from '../basePath.js';
 
 export default function SessionHeader() {
   const { data: session } = useSession();
@@ -48,7 +49,7 @@ export default function SessionHeader() {
           </p>
         </div>
         <div className="actions">
-          <a href="/api/export" download className="button-link">
+          <a href={`${BASE_PATH}api/export`} download className="button-link">
             Export JSON
           </a>
           {!confirming && <button onClick={() => setConfirming(true)}>Close session</button>}

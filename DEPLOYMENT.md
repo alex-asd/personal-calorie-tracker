@@ -170,11 +170,12 @@ above.
 
 ## Environment variables
 
-| Variable           | Default  | Purpose                                                                       |
-| ------------------ | -------- | ----------------------------------------------------------------------------- |
-| `PORT`             | `8002`   | HTTP port the server binds to                                                 |
-| `DATA_DIR`         | `./data` | Directory holding `tracker.db` and WAL files                                  |
-| `TRACKER_PASSWORD` | unset    | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only. |
+| Variable           | Default     | Purpose                                                                                                          |
+| ------------------ | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `PORT`             | `8002`      | HTTP port the server binds to                                                                                   |
+| `DATA_DIR`         | `./data`    | Directory holding `tracker.db` and WAL files                                                                    |
+| `TRACKER_PASSWORD` | unset       | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only.                                  |
+| `BASE_PATH`        | unset (`/`) | Mount the app under a sub-path behind a reverse proxy (e.g. `/calorie`). Leave unset to serve at the root. See [Running behind a reverse proxy](#running-behind-a-reverse-proxy-sub-path). |
 
 ## Optional: enable HTTP Basic Auth
 
@@ -245,6 +246,51 @@ After that the app is reachable at
 service only on the tailnet IP, no further config is needed — the listener
 is already happy on `0.0.0.0`.
 
+## Running behind a reverse proxy (sub-path)
+
+By default the app is served at the root (`/`) — all you need for direct
+access on the port, a dedicated host, or a subdomain. To serve it under a
+**sub-path** of an existing site (e.g. `https://pi/calorie/`) behind Caddy,
+nginx, or similar, set `BASE_PATH` and have the proxy forward that path
+**unchanged** (do not strip the prefix — the app mounts itself there).
+
+A single build works at the root or any sub-path; only this env var changes.
+
+Add it to the systemd unit, then reload + restart:
+
+```ini
+[Service]
+...
+Environment=BASE_PATH=/calorie
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart calorie-tracker
+```
+
+**Caddy** — inside your existing site block, use `handle` (not `handle_path`,
+which would strip the prefix the app expects):
+
+```caddy
+handle /calorie/* {
+    reverse_proxy localhost:8002
+}
+```
+
+**nginx** — the trailing-slash rule matters; `proxy_pass` with no path/trailing
+slash forwards `/calorie/…` as-is (a trailing slash would strip the prefix):
+
+```nginx
+location /calorie/ {
+    proxy_pass http://localhost:8002;
+    proxy_set_header Host $host;
+}
+```
+
+With `BASE_PATH` set, hitting the bare port root (`:8002/`) redirects to
+`:8002/calorie/`, so a forgotten path won't leave you on a blank page.
+
 ## Troubleshooting
 
 - **`Error: SQLITE_BUSY`** in logs → another process has the DB open.
@@ -253,6 +299,7 @@ is already happy on `0.0.0.0`.
 - **Client renders, but every fetch fails with 404** → the build wasn't
   produced. Run `npm run build`; restart the service.
 - **`/api/health` returns 200 but the page is blank** → check the browser
-  console; usually a static asset path mismatch caused by serving from a
-  reverse proxy with a non-root path. This app expects to be served at
-  `/`.
+  console for 404s on `/assets/…`. Usually a static asset path mismatch from
+  serving under a reverse-proxy sub-path without telling the app. Set
+  `BASE_PATH` to that sub-path and make sure the proxy forwards the prefix
+  **without stripping it** (see [Running behind a reverse proxy](#running-behind-a-reverse-proxy-sub-path)).

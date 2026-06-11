@@ -1,10 +1,15 @@
+import { BASE_PREFIX } from './basePath.js';
+
+// Prefix every request with the mount point so calls resolve under a
+// reverse-proxy sub-path. BASE_PREFIX is '' at the root and e.g. '/calorie'
+// behind a proxy; `path` always starts with '/'.
 async function request(method, path, body) {
   const opts = { method, headers: {} };
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  const r = await fetch(path, opts);
+  const r = await fetch(BASE_PREFIX + path, opts);
   const text = await r.text();
   let data = null;
   if (text) {

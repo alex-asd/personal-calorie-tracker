@@ -19,13 +19,15 @@ Run from the repo root:
 - `npm run lint` / `npm run lint:fix` — ESLint (flat config in `eslint.config.js`). Covers `server/**/*.js` (Node globals) and `client/**/*.{js,jsx}` (browser + React + hooks). Both `react/no-unescaped-entities` and `react-hooks/set-state-in-effect` are disabled; `react-hooks/exhaustive-deps` is still on.
 - `npm run format` / `npm run format:check` — Prettier (`.prettierrc`: `singleQuote`, `trailingComma: es5`, `printWidth: 100`). `eslint-config-prettier` is applied last in the ESLint config so the two don't fight.
 
-Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.db` and WAL files live).
+Env vars: `PORT` (default `8002`), `DATA_DIR` (default `./data`, where `tracker.db` and WAL files live), `BASE_PATH` (default unset/root; set to a sub-path like `/calorie` to serve behind a reverse proxy — see the base-path note under Server architecture and `DEPLOYMENT.md`).
 
 ## Architecture
 
 ### Server (`server/`)
 
-The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true, requireAuth = Boolean(process.env.TRACKER_PASSWORD) })` in `server/app.js`, which mounts the six API routers under `/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `/api/*`. When `requireAuth` is true, `basicAuth` middleware from `server/auth.js` is mounted before everything (protects API + SPA); the username is ignored, only the password is checked against `TRACKER_PASSWORD` with `crypto.timingSafeEqual`. Tests construct the app directly via `createApp({ serveStatic: false, requireAuth: false })` so there's no listener, no static fallback, and no auth even if `TRACKER_PASSWORD` happens to be set in the shell.
+The entry point is `server/index.js` (calls `initDb()` then `createApp().listen(PORT)`). The Express app itself is built by `createApp({ serveStatic = true, requireAuth = Boolean(process.env.TRACKER_PASSWORD), basePath = process.env.BASE_PATH })` in `server/app.js`, which mounts the six API routers under `<base>/api/*` and (when `serveStatic` is true and `client/dist/` exists) serves the built SPA with a catch-all that falls through for `<base>/api/*`. When `requireAuth` is true, `basicAuth` middleware from `server/auth.js` is mounted before everything (protects API + SPA); the username is ignored, only the password is checked against `TRACKER_PASSWORD` with `crypto.timingSafeEqual`. Tests construct the app directly via `createApp({ serveStatic: false, requireAuth: false })` so there's no listener, no static fallback, and no auth even if `TRACKER_PASSWORD` happens to be set in the shell.
+
+**Base path (`BASE_PATH`).** `server/basePath.js` `normalizeBasePath()` turns the env value into `''` (root, the default) or `/segment` (no trailing slash). Routers and static are mounted under it, so the whole app can live under a reverse-proxy sub-path (e.g. `/calorie`) with the **same build** — the proxy must forward the prefix unchanged (Caddy `handle`, not `handle_path`; nginx `proxy_pass` with no trailing slash). Vite emits root-absolute asset URLs (`/assets/…`); the catch-all serves index.html through `applyBasePathToHtml()` (also in `basePath.js`), which prefixes those URLs with the base and injects `window.__APP_BASE__` so the client knows its mount point (see `client/src/basePath.js`). At the root, `applyBasePathToHtml` only injects `__APP_BASE__="/"` and leaves URLs untouched. When a base is set, a bare-root request (`/`) 302-redirects to `<base>/`. Tests default `basePath` to unset → routes stay at `/api/*`, so the rest of the suite is unaffected.
 
 Routers map 1:1 to the data model:
 
@@ -68,7 +70,8 @@ On the client, the Home History table (`DayHistoryTable`) rows are clickable (vi
 
 ### Client (`client/src/`)
 
-- `main.jsx` mounts `<App />` inside `<BrowserRouter>` and `<QueryClientProvider>`. The React Query devtools panel is mounted dev-only via `import.meta.env.DEV`.
+- `main.jsx` mounts `<App />` inside `<BrowserRouter basename={ROUTER_BASENAME}>` and `<QueryClientProvider>`. The React Query devtools panel is mounted dev-only via `import.meta.env.DEV`.
+- `basePath.js` is the client's single source of truth for the mount point. It reads `window.__APP_BASE__` (injected by the server, see Server architecture) and exports `BASE_PATH` (`/` or `/calorie/`), `BASE_PREFIX` (`''` or `/calorie`, prepended to every `fetch` in `api.js` and the export `<a href>` in `SessionHeader`), and `ROUTER_BASENAME` (the router basename). In dev there's no injection, so it falls back to `/` and everything stays root-relative — the Vite `/api` proxy is unaffected.
 - `App.jsx` declares four routes: `/`, `/saved-meals`, `/archive`, `/archive/:id`. No top-level state provider beyond the router + query client — server state lives entirely in the TanStack Query cache.
 - `queryClient.js` defines the singleton with `staleTime: 30s`, `gcTime: 5m`, `refetchOnWindowFocus: true`, `retry: 1`. `queryKeys.js` centralises query keys so invalidation is typo-proof; reuse it instead of writing key arrays inline.
 - `hooks/useSession.js` exposes `useSession()`, `useCreateSession()`, `useCloseSession()` — thin wrappers around `useQuery` / `useMutation` against `/api/sessions/current`. The query cache replaces the old SessionContext as the single source of truth for the open session.
