@@ -1,7 +1,13 @@
 import ProgressBar from './ProgressBar.jsx';
 import { todayString, formatLabel } from '../dates.js';
 
-export default function DayHistoryTable({ days, session, showRelative = true, onSelectDay }) {
+export default function DayHistoryTable({
+  days,
+  session,
+  showRelative = true,
+  onSelectDay,
+  weightsByDate,
+}) {
   if (!days || days.length === 0) return null;
   const today = showRelative ? todayString() : null;
   const clickable = Boolean(onSelectDay);
@@ -31,6 +37,12 @@ export default function DayHistoryTable({ days, session, showRelative = true, on
             <div className="day-label">
               <div className="day-label-main">{formatLabel(d.date, today)}</div>
               <div className="muted small">{d.date}</div>
+              {weightsByDate &&
+                (weightsByDate[d.date] != null ? (
+                  <div className="small day-weight">{weightsByDate[d.date]} kg</div>
+                ) : (
+                  <div className="muted small day-weight">no weight</div>
+                ))}
             </div>
             <div className="day-bars">
               <div className="bar-row">

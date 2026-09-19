@@ -564,14 +564,14 @@ button.danger {
   width: 100%;
 }
 
-/* Weight logger */
-.weight-logger h3 {
+/* Weight entry (Today card + day modal) */
+.weight-entry h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
 }
 
-.weight-logger input[type='number'] {
+.weight-entry input[type='number'] {
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -581,13 +581,29 @@ button.danger {
   width: 6rem;
 }
 
-.weight-logger input[type='number']:focus {
+.weight-entry input[type='number']:focus {
   outline: none;
   border-color: var(--accent);
 }
 
+.weight-entry .actions {
+  align-items: center;
+}
+
 .weight-value {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-right: 0.25rem;
+}
+
+.modal-weight {
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.day-weight {
   font-variant-numeric: tabular-nums;
 }
 
@@ -679,6 +695,12 @@ button.danger {
   fill: var(--ok);
   stroke: var(--bg);
   stroke-width: 1.5;
+}
+
+.weight-chart-dot.start {
+  fill: var(--bg);
+  stroke: var(--ok);
+  stroke-width: 2;
 }
 
 .weight-chart-dot.latest {

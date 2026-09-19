@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../hooks/useSession.js';
+import { useWeightHistory } from '../hooks/useWeights.js';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import { todayString } from '../dates.js';
@@ -36,6 +37,12 @@ export default function Home() {
     },
     enabled: !!session,
   });
+
+  const weightsQuery = useWeightHistory();
+  const weightsByDate = useMemo(
+    () => Object.fromEntries((weightsQuery.data?.weights ?? []).map((w) => [w.date, w.weight_kg])),
+    [weightsQuery.data]
+  );
 
   const meals = mealsQuery.data ?? [];
   const days = daysQuery.data ?? [];
@@ -78,7 +85,12 @@ export default function Home() {
           <WeightLogger disabled={session.blocked} />
           <WeightChart />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
-          <DayHistoryTable days={pastDays} session={session} onSelectDay={setSelectedDate} />
+          <DayHistoryTable
+            days={pastDays}
+            session={session}
+            onSelectDay={setSelectedDate}
+            weightsByDate={weightsByDate}
+          />
         </>
       )}
 

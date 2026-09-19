@@ -25,3 +25,17 @@ export function addDays(str, n) {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+// Validate a `YYYY-MM-DD` string against the open session's editable range
+// (`start_date` through today). Missing/empty defaults to today. `what` names
+// the thing being logged for the future-date error ("meals", "weight").
+// Returns `{ date }` or `{ error }`.
+export function validateSessionDate(session, raw, what = 'entries') {
+  if (raw == null || raw === '') return { date: today() };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || addDays(raw, 0) !== raw) {
+    return { error: 'invalid date format' };
+  }
+  if (raw < session.start_date) return { error: 'date is before the session start' };
+  if (raw > today()) return { error: `cannot log ${what} for a future day` };
+  return { date: raw };
+}

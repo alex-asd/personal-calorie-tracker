@@ -1,6 +1,6 @@
 import express from 'express';
 import { getDb } from '../db.js';
-import { today, daysBetween } from '../dates.js';
+import { today, daysBetween, validateSessionDate } from '../dates.js';
 
 const router = express.Router();
 const MAX_DAYS = 90;
@@ -13,14 +13,6 @@ function isBlocked(session) {
   if (!session) return true;
   const dayNumber = daysBetween(session.start_date, today()) + 1;
   return dayNumber > MAX_DAYS;
-}
-
-function validateDate(session, raw) {
-  if (raw == null || raw === '') return { date: today() };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: 'invalid date format' };
-  if (raw < session.start_date) return { error: 'date is before the session start' };
-  if (raw > today()) return { error: 'cannot log meals for a future day' };
-  return { date: raw };
 }
 
 function parseNutrition(body) {
@@ -89,7 +81,7 @@ router.post('/', (req, res) => {
   if (parsed.error) return res.status(400).json({ error: parsed.error });
   const { name, calories, protein, carbs, fat } = parsed.values;
 
-  const parsedDate = validateDate(session, req.body?.date);
+  const parsedDate = validateSessionDate(session, req.body?.date, 'meals');
   if (parsedDate.error) return res.status(400).json({ error: parsedDate.error });
   const { date } = parsedDate;
 

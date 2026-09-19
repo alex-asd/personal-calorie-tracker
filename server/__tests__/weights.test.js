@@ -3,7 +3,7 @@ import request from 'supertest';
 import { createTestApp } from './helpers/app.js';
 import { makeSession } from './helpers/seed.js';
 import { getDb } from '../db.js';
-import { today } from '../dates.js';
+import { today, addDays } from '../dates.js';
 
 let app;
 
@@ -150,5 +150,115 @@ describe('DELETE /api/weights/today', () => {
   it('returns 404 when no open session', async () => {
     const res = await request(app).delete('/api/weights/today');
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PUT /api/weights/:date', () => {
+  it('logs a weight for a past day of the open session', async () => {
+    const session = makeSession({ startDaysAgo: 5 });
+    const date = session.start_date;
+    const res = await request(app).put(`/api/weights/${date}`).send({ weight_kg: 81.3 });
+    expect(res.status).toBe(201);
+    expect(res.body.weight).toEqual({ date, weight_kg: 81.3 });
+
+    const history = await request(app).get('/api/weights');
+    expect(history.body.weights).toEqual([{ date, weight_kg: 81.3 }]);
+  });
+
+  it('replaces an existing entry for that day and returns 200', async () => {
+    const session = makeSession({ startDaysAgo: 3 });
+    const date = session.start_date;
+    await request(app).put(`/api/weights/${date}`).send({ weight_kg: 80 });
+    const res = await request(app).put(`/api/weights/${date}`).send({ weight_kg: 79.4 });
+    expect(res.status).toBe(200);
+    expect(res.body.weight).toEqual({ date, weight_kg: 79.4 });
+
+    const history = await request(app).get('/api/weights');
+    expect(history.body.weights).toEqual([{ date, weight_kg: 79.4 }]);
+  });
+
+  it('works for today and is visible through GET /today', async () => {
+    makeSession();
+    const res = await request(app).put(`/api/weights/${today()}`).send({ weight_kg: 78 });
+    expect(res.status).toBe(201);
+    const t = await request(app).get('/api/weights/today');
+    expect(t.body.weight).toEqual({ date: today(), weight_kg: 78 });
+  });
+
+  it('rejects a date before the session start', async () => {
+    const session = makeSession({ startDaysAgo: 2 });
+    const before = addDays(session.start_date, -1);
+    const res = await request(app).put(`/api/weights/${before}`).send({ weight_kg: 80 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/before the session start/);
+  });
+
+  it('rejects a future date', async () => {
+    makeSession();
+    const res = await request(app)
+      .put(`/api/weights/${addDays(today(), 1)}`)
+      .send({ weight_kg: 80 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/future/);
+  });
+
+  it('rejects a malformed or impossible date', async () => {
+    makeSession();
+    for (const bad of ['today', '2026-1-5', '2026-13-40']) {
+      const res = await request(app).put(`/api/weights/${bad}`).send({ weight_kg: 80 });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('rejects a non-positive weight', async () => {
+    makeSession();
+    const res = await request(app).put(`/api/weights/${today()}`).send({ weight_kg: -1 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 403 when the session has exceeded 90 days', async () => {
+    const session = makeSession({ startDaysAgo: 90 });
+    const res = await request(app)
+      .put(`/api/weights/${session.start_date}`)
+      .send({ weight_kg: 80 });
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 404 when no open session', async () => {
+    const res = await request(app).put(`/api/weights/${today()}`).send({ weight_kg: 80 });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/weights/:date', () => {
+  it('removes the weight for a past day', async () => {
+    const session = makeSession({ startDaysAgo: 4 });
+    const date = session.start_date;
+    await request(app).put(`/api/weights/${date}`).send({ weight_kg: 80 });
+
+    const res = await request(app).delete(`/api/weights/${date}`);
+    expect(res.status).toBe(204);
+
+    const history = await request(app).get('/api/weights');
+    expect(history.body.weights).toEqual([]);
+  });
+
+  it('returns 404 when nothing is logged for that day', async () => {
+    const session = makeSession({ startDaysAgo: 4 });
+    const res = await request(app).delete(`/api/weights/${session.start_date}`);
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects a malformed date', async () => {
+    makeSession();
+    const res = await request(app).delete('/api/weights/not-a-date');
+    expect(res.status).toBe(400);
+  });
+
+  it('still honours the literal /today route', async () => {
+    makeSession();
+    await request(app).put(`/api/weights/${today()}`).send({ weight_kg: 80 });
+    const res = await request(app).delete('/api/weights/today');
+    expect(res.status).toBe(204);
   });
 });
