@@ -51,7 +51,7 @@ export default [
     },
     // React is installed under client/node_modules, not the root — pin the
     // version so eslint-plugin-react doesn't warn about failing to detect it.
-    settings: { react: { version: '18.3' } },
+    settings: { react: { version: '19' } },
     rules: {
       ...reactPlugin.configs.flat.recommended.rules,
       ...reactHooks.configs.flat.recommended.rules,

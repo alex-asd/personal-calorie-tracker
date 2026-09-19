@@ -49,7 +49,7 @@ export function createApp({
       // `index: false` so the mount root falls through to the catch-all,
       // which serves the base-adapted index.html instead of the raw file.
       app.use(base || '/', express.static(clientDist, { index: false }));
-      app.get('*', (req, res, next) => {
+      app.get('/{*splat}', (req, res, next) => {
         if (req.path.startsWith(`${base}/api/`)) return next();
         // Requests outside the mount (e.g. hitting the bare port while a
         // BASE_PATH is set) get redirected to the app root.

@@ -46,7 +46,7 @@ Routers map 1:1 to the data model:
 - `daily_totals` is maintained incrementally inside transactions in `routes/meals.js` (insert adds, edit applies the delta, delete subtracts). It is **not** recomputed from `meals` — the source of truth for archived-session day totals is `daily_totals`, which is why closing a session deletes `meals` but keeps `daily_totals`.
 - `sessions.goal_weight_kg` is an optional REAL set at session creation (added in migration `004`). It's purely a display target for the Home weight-progress chart — nothing on the server enforces or compares against it.
 - `sessions.phase` is a NOT NULL TEXT column added in migration `005` with a CHECK constraint allowing only `'cut'` or `'bulk'` and defaulting to `'cut'`. It is purely a display-coloring hint — no route gates behavior on it — and only the calories progress bar (`client/src/components/ProgressBar.jsx`, passed `phase={session.phase}` by `DayHistoryTable`) reads it; on a bulk the calories bar swaps to the protein hue curve (red while under target, green once met). Protein behavior is unchanged in both phases.
-- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`, `003_meal_categories.sql`, `004_session_goal_weight.sql`, `005_session_phase.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and records all existing files as applied without re-running them; that branch is one-shot and never fires again on the same DB.
+- Schema migrations live in `server/migrations/` as zero-padded SQL files (e.g. `001_initial.sql`, `002_session_weight.sql`, `003_meal_categories.sql`, `004_session_goal_weight.sql`, `005_session_phase.sql`). `server/migrate.js` runs unapplied files in order inside a transaction and records them in a `_migrations` table. Adding a schema change means writing a new `NNN_*.sql` file — never edit a previously-shipped migration. On the first boot after a database existed under the old inline-schema regime, the runner detects the legacy schema (presence of `sessions` without a `_migrations` row) and, for each file with an entry in `LEGACY_PROBES` (a filename → schema-check map covering `001`–`005`), records it as applied without running it **only if its effects are already present** (table/column exists); otherwise the file runs normally. The same probes also repair databases where an older runner falsely recorded a file as applied: a recorded file whose probe fails is re-run on the next boot. Migrations `006+` need no probe — they only ever run through the runner.
 - `initDb({ dbPath } = {})` accepts an override path; tests pass `':memory:'` for isolation. WAL mode is skipped for in-memory databases. `closeDb()` is exported for test teardown / reset.
 
 `server/dates.js` deliberately uses local-timezone `YYYY-MM-DD` strings (not `toISOString()` / UTC). Day boundaries follow the Pi's local clock. All date comparisons across the codebase are string comparisons on this format — keep it that way.
@@ -85,18 +85,18 @@ On the client, the Home History table (`DayHistoryTable`) rows are clickable (vi
 
 When adding a new mutation, update this table and the mutation's `onSuccess`. `currentSessionId` is read from `queryClient.getQueryData(queryKeys.sessions.current())?.id` inside `onSuccess`.
 
-| Mutation                      | Invalidates / sets                                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Create session                | sets `sessions.current()`; invalidates `sessions.all`                                                     |
-| Close session                 | clears `sessions.current()`; invalidates `sessions.all`                                                   |
+| Mutation                      | Invalidates / sets                                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create session                | sets `sessions.current()`; invalidates `sessions.all`                                                                                        |
+| Close session                 | clears `sessions.current()`; invalidates `sessions.all`                                                                                      |
 | Add meal                      | `meals.all` (all date keys), `sessions.days(currentSessionId)`; also `savedMeals.list()` + `categories.list()` if `save_to_library` was true |
-| Edit meal                     | `meals.all`, `sessions.days(currentSessionId)`                                                            |
-| Delete meal                   | `meals.all`, `sessions.days(currentSessionId)`                                                           |
-| Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected           |
-| Category create/rename        | `categories.list()` only                                                                                  |
-| Category delete               | `categories.list()` **and** `savedMeals.list()` (its meals get `category_id = NULL` server-side)          |
-| Log weight                    | sets `weights.today()` directly; invalidates `weights.all` (refreshes `weights.history(sessionId)` for the chart) |
-| Clear weight                  | sets `weights.today()` to `null`; invalidates `weights.all`                                              |
+| Edit meal                     | `meals.all`, `sessions.days(currentSessionId)`                                                                                               |
+| Delete meal                   | `meals.all`, `sessions.days(currentSessionId)`                                                                                               |
+| Saved-meal create/edit/delete | `savedMeals.list()` only — historical `meals` carry their own nutrition copy and are unaffected                                              |
+| Category create/rename        | `categories.list()` only                                                                                                                     |
+| Category delete               | `categories.list()` **and** `savedMeals.list()` (its meals get `category_id = NULL` server-side)                                             |
+| Log weight                    | sets `weights.today()` directly; invalidates `weights.all` (refreshes `weights.history(sessionId)` for the chart)                            |
+| Clear weight                  | sets `weights.today()` to `null`; invalidates `weights.all`                                                                                  |
 
 ### Tests (`server/__tests__/`)
 

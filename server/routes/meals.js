@@ -99,7 +99,12 @@ router.post('/', (req, res) => {
 
   // A category only applies when creating a brand-new library entry.
   let categoryId = null;
-  if (saveToLibrary && !sourceSavedMealId && req.body?.category_id != null && req.body?.category_id !== '') {
+  if (
+    saveToLibrary &&
+    !sourceSavedMealId &&
+    req.body?.category_id != null &&
+    req.body?.category_id !== ''
+  ) {
     categoryId = Number(req.body.category_id);
     if (!Number.isInteger(categoryId)) {
       return res.status(400).json({ error: 'category_id must be an integer' });

@@ -53,8 +53,8 @@ See [`REQUIREMENTS.md`](REQUIREMENTS.md) for the product spec and data model.
 
 ## Tech stack
 
-- Node.js 22+ (Express + `better-sqlite3` 12 — ships prebuilt binaries for Node 22, 24, 25, 26)
-- React 18 + Vite
+- Node.js 22+ (Express 5 + `better-sqlite3` 13 — N-API build, prebuilt binaries bundled in the package)
+- React 19 + Vite 8
 - TanStack Query for server-state caching on the client
 - SQLite single-file database (WAL mode)
 

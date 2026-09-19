@@ -52,8 +52,7 @@ export default function TodayTotals({ meals, session }) {
         <div className="bar-row">
           <ProgressBar value={protein} target={session.protein_target} variant="protein" />
           <div className="bar-numeric">
-            {Math.round(protein)}g
-            <span className="muted"> / {session.protein_target}g</span>
+            {Math.round(protein)}g<span className="muted"> / {session.protein_target}g</span>
           </div>
         </div>
       </div>

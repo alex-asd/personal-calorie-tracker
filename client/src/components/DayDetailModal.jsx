@@ -32,11 +32,7 @@ export default function DayDetailModal({ date, session, onClose }) {
   // there's a single overlay and a single set of Escape/backdrop handlers.
   if (adding) {
     return (
-      <AddMealModal
-        date={date}
-        onClose={() => setAdding(false)}
-        onAdded={() => setAdding(false)}
-      />
+      <AddMealModal date={date} onClose={() => setAdding(false)} onAdded={() => setAdding(false)} />
     );
   }
 
