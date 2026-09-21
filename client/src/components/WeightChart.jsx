@@ -1,9 +1,7 @@
 import { useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../hooks/useSession.js';
-import { api } from '../api.js';
-import { queryKeys } from '../queryKeys.js';
-import { parseLocal, todayString } from '../dates.js';
+import { useWeightHistory } from '../hooks/useWeights.js';
+import { parseLocal, shiftDateString, todayString } from '../dates.js';
 
 const VBW = 600;
 const VBH = 220;
@@ -46,12 +44,7 @@ function formatShort(dateStr) {
 
 export default function WeightChart() {
   const { data: session } = useSession();
-  const sessionId = session?.id;
-  const { data, isLoading, error } = useQuery({
-    queryKey: sessionId ? queryKeys.weights.history(sessionId) : ['weights', 'history', 'idle'],
-    queryFn: () => api.get('/api/weights'),
-    enabled: !!sessionId,
-  });
+  const { data, isLoading, error } = useWeightHistory();
 
   const gradientId = useId();
   const [hoverIdx, setHoverIdx] = useState(null);
@@ -78,13 +71,25 @@ export default function WeightChart() {
   const goal = data.goal_weight_kg;
   const startW = data.start_weight_kg;
 
-  // Merge the (optional) starting weight with the daily logs, deduped by date.
+  // One point per daily log, plus the (optional) starting weight. The start
+  // weight normally sits on day 0; if a weight was also logged on the start
+  // date, neither is dropped — the start weight is drawn one day earlier so
+  // the two form a segment instead of landing on the same x.
   const byDate = new Map();
-  if (startW != null) byDate.set(startDate, { date: startDate, weight: startW, kind: 'start' });
   for (const w of data.weights) {
-    byDate.set(w.date, { date: w.date, weight: w.weight_kg, kind: 'log' });
+    byDate.set(w.date, {
+      date: w.date,
+      weight: w.weight_kg,
+      kind: 'log',
+      x: dayIndex(w.date, startDate),
+    });
   }
-  const points = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (startW != null) {
+    const shifted = byDate.has(startDate);
+    const date = shifted ? shiftDateString(startDate, -1) : startDate;
+    byDate.set(date, { date, weight: startW, kind: 'start', x: shifted ? -1 : 0 });
+  }
+  const points = [...byDate.values()].sort((a, b) => a.x - b.x);
 
   if (points.length === 0) {
     return (
@@ -97,7 +102,8 @@ export default function WeightChart() {
   }
 
   const todayIdx = Math.max(0, dayIndex(todayString(), startDate));
-  const lastIdx = dayIndex(points[points.length - 1].date, startDate);
+  const lastIdx = points[points.length - 1].x;
+  const xMin = Math.min(0, points[0].x);
   const xMax = Math.max(todayIdx, lastIdx, 1);
 
   let yMin = Math.min(...points.map((p) => p.weight));
@@ -116,15 +122,10 @@ export default function WeightChart() {
     yMax += pad;
   }
 
-  const xPx = (idx) => PAD.left + (idx / xMax) * PLOT_W;
+  const xPx = (idx) => PAD.left + ((idx - xMin) / (xMax - xMin)) * PLOT_W;
   const yPx = (w) => PAD.top + (1 - (w - yMin) / (yMax - yMin)) * PLOT_H;
 
-  const xy = points.map((p) => ({
-    ...p,
-    x: dayIndex(p.date, startDate),
-    px: xPx(dayIndex(p.date, startDate)),
-    py: yPx(p.weight),
-  }));
+  const xy = points.map((p) => ({ ...p, px: xPx(p.x), py: yPx(p.weight) }));
 
   const linePath = xy.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.px} ${p.py}`).join(' ');
   const bottomY = PAD.top + PLOT_H;
@@ -137,8 +138,8 @@ export default function WeightChart() {
   const trend =
     reg && xy.length >= 2
       ? {
-          x1: xPx(0),
-          y1: yPx(reg.intercept),
+          x1: xPx(xMin),
+          y1: yPx(reg.intercept + reg.slope * xMin),
           x2: xPx(xMax),
           y2: yPx(reg.intercept + reg.slope * xMax),
           slopePerWeek: reg.slope * 7,
@@ -146,8 +147,8 @@ export default function WeightChart() {
       : null;
 
   const current = xy[xy.length - 1].weight;
-  const first = xy[0].weight;
-  const deltaFromStart = current - first;
+  const baseline = startW ?? xy[0].weight;
+  const deltaFromStart = current - baseline;
   const toGo = goal != null ? current - goal : null;
 
   const yTicks = [yMax, (yMax + yMin) / 2, yMin];
@@ -253,7 +254,7 @@ export default function WeightChart() {
         ))}
 
         <text x={PAD.left} y={VBH - 8} textAnchor="start" className="weight-chart-axis">
-          {formatShort(startDate)}
+          {formatShort(xMin < 0 ? xy[0].date : startDate)}
         </text>
         <text x={VBW - PAD.right} y={VBH - 8} textAnchor="end" className="weight-chart-axis">
           Today
@@ -294,7 +295,9 @@ export default function WeightChart() {
             cx={p.px}
             cy={p.py}
             r={i === xy.length - 1 ? 4 : 3}
-            className={`weight-chart-dot ${i === xy.length - 1 ? 'latest' : ''}`}
+            className={`weight-chart-dot ${p.kind === 'start' ? 'start' : ''} ${
+              i === xy.length - 1 ? 'latest' : ''
+            }`}
           />
         ))}
 
@@ -311,6 +314,7 @@ export default function WeightChart() {
             <g transform={`translate(${tipX}, ${Math.max(PAD.top + 12, active.py - 14)})`}>
               <text className="weight-chart-tooltip" textAnchor={tipAnchor} y={-2}>
                 {active.weight.toFixed(1)} kg · {formatShort(active.date)}
+                {active.kind === 'start' ? ' · start' : ''}
               </text>
             </g>
           </>

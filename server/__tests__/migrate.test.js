@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runMigrations } from '../migrate.js';
 import { closeDb } from '../db.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let db;
 
@@ -111,5 +116,94 @@ describe('legacy schema short-circuit', () => {
       .map((c) => c.name);
     expect(cols).toContain('phase');
     expect(cols).toContain('goal_weight_kg');
+  });
+});
+
+// Mimic a database created under the old inline-schema regime: only the DDL
+// that existed at the time was ever run, and there is no _migrations table.
+function buildLegacySchemaThrough(db, lastFile) {
+  const dir = path.join(__dirname, '..', 'migrations');
+  for (const file of EXPECTED_FILES) {
+    db.exec(fs.readFileSync(path.join(dir, file), 'utf8'));
+    if (file === lastFile) break;
+  }
+}
+
+function tableNames(db) {
+  return db
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`)
+    .all()
+    .map((r) => r.name);
+}
+
+function columnNames(db, table) {
+  return db.pragma(`table_info(${table})`).map((c) => c.name);
+}
+
+function appliedNames(db) {
+  return db
+    .prepare(`SELECT name FROM _migrations ORDER BY name`)
+    .all()
+    .map((r) => r.name);
+}
+
+describe('legacy schema that predates later migrations', () => {
+  it('runs the missing migrations instead of recording them as applied', () => {
+    buildLegacySchemaThrough(db, '002_session_weight.sql');
+    expect(tableNames(db)).not.toContain('categories');
+    expect(tableNames(db)).not.toContain('_migrations');
+
+    expect(() => runMigrations(db)).not.toThrow();
+
+    expect(tableNames(db)).toContain('categories');
+    expect(columnNames(db, 'saved_meals')).toContain('category_id');
+    expect(columnNames(db, 'sessions')).toEqual(
+      expect.arrayContaining(['start_weight_kg', 'goal_weight_kg', 'phase'])
+    );
+    expect(appliedNames(db)).toEqual(EXPECTED_FILES);
+  });
+
+  it('handles a legacy database at the very first schema', () => {
+    buildLegacySchemaThrough(db, '001_initial.sql');
+
+    expect(() => runMigrations(db)).not.toThrow();
+
+    expect(columnNames(db, 'sessions')).toEqual(
+      expect.arrayContaining(['start_weight_kg', 'end_weight_kg', 'goal_weight_kg', 'phase'])
+    );
+    expect(tableNames(db)).toContain('categories');
+    expect(appliedNames(db)).toEqual(EXPECTED_FILES);
+  });
+
+  it('is idempotent after the transition', () => {
+    buildLegacySchemaThrough(db, '002_session_weight.sql');
+    runMigrations(db);
+
+    expect(() => runMigrations(db)).not.toThrow();
+    expect(appliedNames(db)).toEqual(EXPECTED_FILES);
+  });
+});
+
+describe('repairing migrations falsely recorded as applied', () => {
+  it('runs a recorded migration whose schema effects are missing', () => {
+    // The pre-fix runner recorded every file on a legacy database, leaving
+    // e.g. 003's table absent. On the next boot the probe must notice.
+    buildLegacySchemaThrough(db, '002_session_weight.sql');
+    db.exec(
+      `CREATE TABLE _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))`
+    );
+    const record = db.prepare(`INSERT INTO _migrations (name) VALUES (?)`);
+    for (const file of EXPECTED_FILES) record.run(file);
+    expect(tableNames(db)).not.toContain('categories');
+
+    expect(() => runMigrations(db)).not.toThrow();
+
+    expect(tableNames(db)).toContain('categories');
+    expect(columnNames(db, 'saved_meals')).toContain('category_id');
+    expect(columnNames(db, 'sessions')).toEqual(
+      expect.arrayContaining(['goal_weight_kg', 'phase'])
+    );
+    // No duplicate rows — the files were already recorded.
+    expect(appliedNames(db)).toEqual(EXPECTED_FILES);
   });
 });

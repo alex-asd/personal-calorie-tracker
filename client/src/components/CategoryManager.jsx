@@ -59,7 +59,11 @@ export default function CategoryManager() {
             placeholder="New category name"
             aria-label="New category name"
           />
-          <button type="submit" className="primary" disabled={!newName.trim() || createMutation.isPending}>
+          <button
+            type="submit"
+            className="primary"
+            disabled={!newName.trim() || createMutation.isPending}
+          >
             {createMutation.isPending ? 'Adding…' : 'Add'}
           </button>
         </div>

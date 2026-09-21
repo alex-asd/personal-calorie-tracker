@@ -5,6 +5,7 @@ import { queryKeys } from '../queryKeys.js';
 import { formatLabel } from '../dates.js';
 import MealList from './MealList.jsx';
 import AddMealModal from './AddMealModal.jsx';
+import WeightEntry from './WeightEntry.jsx';
 
 export default function DayDetailModal({ date, session, onClose }) {
   const [adding, setAdding] = useState(false);
@@ -32,11 +33,7 @@ export default function DayDetailModal({ date, session, onClose }) {
   // there's a single overlay and a single set of Escape/backdrop handlers.
   if (adding) {
     return (
-      <AddMealModal
-        date={date}
-        onClose={() => setAdding(false)}
-        onAdded={() => setAdding(false)}
-      />
+      <AddMealModal date={date} onClose={() => setAdding(false)} onAdded={() => setAdding(false)} />
     );
   }
 
@@ -49,7 +46,7 @@ export default function DayDetailModal({ date, session, onClose }) {
         className="modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label={`Meals for ${date}`}
+        aria-label={`Day ${date}`}
       >
         <div className="modal-header">
           <h2>
@@ -58,6 +55,15 @@ export default function DayDetailModal({ date, session, onClose }) {
           <button onClick={onClose} aria-label="Close" className="close">
             ×
           </button>
+        </div>
+
+        <div className="modal-weight">
+          <WeightEntry
+            date={date}
+            label={<h3>Weight</h3>}
+            disabled={!canEdit}
+            blockedMessage="Session is past day 90 — close it to edit weight."
+          />
         </div>
 
         {canEdit && (

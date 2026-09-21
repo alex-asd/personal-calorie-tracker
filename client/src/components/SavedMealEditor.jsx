@@ -13,7 +13,9 @@ export default function SavedMealEditor({ meal, onSave, onCancel }) {
   const [protein, setProtein] = useState(meal ? String(meal.protein) : '');
   const [carbs, setCarbs] = useState(meal?.carbs == null ? '' : String(meal.carbs));
   const [fat, setFat] = useState(meal?.fat == null ? '' : String(meal.fat));
-  const [categoryId, setCategoryId] = useState(meal?.category_id == null ? '' : String(meal.category_id));
+  const [categoryId, setCategoryId] = useState(
+    meal?.category_id == null ? '' : String(meal.category_id)
+  );
 
   const saveMutation = useMutation({
     mutationFn: (payload) =>

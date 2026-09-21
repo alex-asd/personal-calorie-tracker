@@ -18,7 +18,6 @@ export const queryKeys = {
   },
   weights: {
     all: ['weights'],
-    today: () => ['weights', 'today'],
     history: (sessionId) => ['weights', 'history', sessionId],
   },
 };

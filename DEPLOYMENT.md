@@ -29,12 +29,15 @@ tailnet.
 
 ## Prerequisites
 
-- Node.js 20 or later (`node --version`).
+- Node.js 22 or later (`node --version`). `better-sqlite3` 13 requires it.
 - Tailscale running on the Pi and joined to your tailnet.
 - `git` if you plan to clone the repo (optional).
 
-`better-sqlite3` ships a prebuilt native binary for ARM, so you don't need
-to install system SQLite or a C toolchain.
+`better-sqlite3` 13 bundles a prebuilt native binary for 64-bit ARM Linux
+(`linux-arm64`) inside the npm package itself, so on a 64-bit Raspberry Pi OS
+you don't need system SQLite or a C toolchain. On 32-bit Raspberry Pi OS
+(`armv7l`) there is no prebuilt binary and `npm install` compiles it from
+source, which needs `build-essential` and `python3`.
 
 ## Install
 
@@ -170,11 +173,11 @@ above.
 
 ## Environment variables
 
-| Variable           | Default     | Purpose                                                                                                          |
-| ------------------ | ----------- | --------------------------------------------------------------------------------------------------------------- |
-| `PORT`             | `8002`      | HTTP port the server binds to                                                                                   |
-| `DATA_DIR`         | `./data`    | Directory holding `tracker.db` and WAL files                                                                    |
-| `TRACKER_PASSWORD` | unset       | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only.                                  |
+| Variable           | Default     | Purpose                                                                                                                                                                                    |
+| ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PORT`             | `8002`      | HTTP port the server binds to                                                                                                                                                              |
+| `DATA_DIR`         | `./data`    | Directory holding `tracker.db` and WAL files                                                                                                                                               |
+| `TRACKER_PASSWORD` | unset       | If set, every request requires HTTP Basic Auth. Leave unset for tailnet-only.                                                                                                              |
 | `BASE_PATH`        | unset (`/`) | Mount the app under a sub-path behind a reverse proxy (e.g. `/calorie`). Leave unset to serve at the root. See [Running behind a reverse proxy](#running-behind-a-reverse-proxy-sub-path). |
 
 ## Optional: enable HTTP Basic Auth

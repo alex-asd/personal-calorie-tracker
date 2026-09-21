@@ -20,7 +20,12 @@ export default function CreateSessionForm() {
   const placeholders =
     phase === 'bulk'
       ? { calories: 'e.g. 3000', protein: 'e.g. 180', weight: 'e.g. 75.5', goalWeight: 'e.g. 80.0' }
-      : { calories: 'e.g. 2200', protein: 'e.g. 160', weight: 'e.g. 75.5', goalWeight: 'e.g. 72.0' };
+      : {
+          calories: 'e.g. 2200',
+          protein: 'e.g. 160',
+          weight: 'e.g. 75.5',
+          goalWeight: 'e.g. 72.0',
+        };
 
   function onSubmit(e) {
     e.preventDefault();
@@ -53,7 +58,9 @@ export default function CreateSessionForm() {
               onChange={() => setPhase('cut')}
             />
             <span className="phase-option-title">Cut</span>
-            <span className="phase-option-sub">Calories are a ceiling — staying under is good.</span>
+            <span className="phase-option-sub">
+              Calories are a ceiling — staying under is good.
+            </span>
           </label>
           <label className={`phase-option ${phase === 'bulk' ? 'active' : ''}`}>
             <input
@@ -64,7 +71,9 @@ export default function CreateSessionForm() {
               onChange={() => setPhase('bulk')}
             />
             <span className="phase-option-title">Bulk</span>
-            <span className="phase-option-sub">Calories are a floor — hitting the target is good.</span>
+            <span className="phase-option-sub">
+              Calories are a floor — hitting the target is good.
+            </span>
           </label>
         </fieldset>
         <label>

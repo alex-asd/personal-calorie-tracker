@@ -26,8 +26,7 @@ router.get('/current', (req, res) => {
 
 router.post('/', (req, res) => {
   const db = getDb();
-  const { calorie_target, protein_target, start_weight_kg, goal_weight_kg, phase } =
-    req.body ?? {};
+  const { calorie_target, protein_target, start_weight_kg, goal_weight_kg, phase } = req.body ?? {};
 
   const calories = Number(calorie_target);
   const protein = Number(protein_target);

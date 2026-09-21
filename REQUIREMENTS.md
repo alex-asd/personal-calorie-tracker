@@ -19,7 +19,7 @@ A single-user calorie and macro tracking web app, self-hosted on a Raspberry Pi 
 - **Session** — id, start date, end date (null while open), daily calorie target, daily protein target, status (`open` / `closed`), phase (`cut` / `bulk`, default `cut`), optional starting and ending weight (kg). The phase decides how the calorie target is interpreted (ceiling for a cut, floor for a bulk) and only affects display colouring — no other behaviour is gated on it.
 - **Meal** — belongs to a session and a date; name, calories (required), protein (required), carbs (optional), fat (optional). May optionally reference the SavedMeal it was created from, but stores its own copy of the values so edits/deletes of the source SavedMeal do not affect historical entries.
 - **DailyTotal** — per-day calories and protein; retained when a session is archived and its one-time meals are deleted.
-- **DailyWeight** — per-day weight (kg) for the open session. At most one entry per day. Deleted when the session is closed; only the session's starting/ending weight survives in the archive.
+- **DailyWeight** — per-day weight (kg) for the open session. At most one entry per day; any day from the session start through today can be logged, corrected or cleared (a forgotten weigh-in can be back-filled). Deleted when the session is closed; only the session's starting/ending weight survives in the archive.
 
 Day boundaries follow the Pi's local timezone (midnight to midnight).
 
@@ -45,8 +45,9 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - Shows today's totals: calories, protein, carbs, fat.
 - "Add meal" button in the top right.
 - Today's meals can be added and edited.
-- Earlier days in the open session are editable too: clicking a day in the history opens a modal to add, edit, and delete that day's meals.
-- A "today's weight" card lets the user log or clear a single weight value for the current day.
+- Earlier days in the open session are editable too: clicking a day in the history opens a modal to log, edit or clear that day's weight and to add, edit, and delete that day's meals. History rows show the logged weight (or "no weight") so missed days stand out.
+- A "today's weight" card lets the user log, edit or clear a single weight value for the current day.
+- The weight-progress chart uses the session's starting weight (when one was entered) as its first point on the start date, and measures "from start" against it. If a weight was also logged on the start date, the starting weight is drawn one day earlier so both points remain and are joined by the line.
 
 ### Adding a meal
 
