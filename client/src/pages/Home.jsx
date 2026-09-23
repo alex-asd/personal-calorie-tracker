@@ -14,6 +14,7 @@ import DayHistoryTable from '../components/DayHistoryTable.jsx';
 import DayDetailModal from '../components/DayDetailModal.jsx';
 import WeightLogger from '../components/WeightLogger.jsx';
 import WeightChart from '../components/WeightChart.jsx';
+import ActivityLogger from '../components/ActivityLogger.jsx';
 
 export default function Home() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useSession();
@@ -84,6 +85,7 @@ export default function Home() {
           />
           <WeightLogger disabled={session.blocked} />
           <WeightChart />
+          <ActivityLogger disabled={session.blocked} />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable
             days={pastDays}

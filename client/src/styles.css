@@ -733,6 +733,144 @@ button.danger {
   stroke-linejoin: round;
 }
 
+/* Card title row with a trailing action (e.g. Activities → Manage) */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-header h2 {
+  margin: 0;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+/* Activities (Today card) */
+.activity-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem auto;
+  align-items: center;
+  gap: 0.4rem 0.85rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+}
+
+.activity-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.activity-total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.activity-value {
+  font-weight: 600;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-value.empty {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.activity-form {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.activity-form button {
+  padding: 0.4rem 0.7rem;
+}
+
+.activity-form .activity-clear {
+  padding: 0.4rem 0.55rem;
+}
+
+.activity-row input,
+.activity-new input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.95rem;
+  min-width: 0;
+}
+
+.activity-row input {
+  width: 5.5rem;
+}
+
+.activity-row input:focus,
+.activity-new input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.activity-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .activity-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .activity-form {
+    grid-column: 1 / -1;
+  }
+
+  .activity-row input {
+    flex: 1;
+  }
+}
+
+.activity-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activity-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.activity-new input {
+  flex: 1 1 10rem;
+  background: var(--surface-2);
+}
+
+.activity-new .activity-unit-input {
+  flex: 0 1 7rem;
+}
+
+.meal-item .activity-new input {
+  background: var(--surface);
+}
+
 /* Day history table */
 .day-rows {
   display: flex;

@@ -106,6 +106,7 @@ router.post('/:id/close', (req, res) => {
     endWeight = w;
   }
 
+  // daily_activities are kept (like daily_totals) so the archive can show them.
   const tx = db.transaction(() => {
     db.prepare(`DELETE FROM meals WHERE session_id = ?`).run(id);
     db.prepare(`DELETE FROM daily_weights WHERE session_id = ?`).run(id);

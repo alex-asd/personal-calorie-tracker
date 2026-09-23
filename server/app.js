@@ -9,6 +9,8 @@ import mealsRouter from './routes/meals.js';
 import savedMealsRouter from './routes/savedMeals.js';
 import categoriesRouter from './routes/categories.js';
 import weightsRouter from './routes/weights.js';
+import activitiesRouter from './routes/activities.js';
+import activityLogsRouter from './routes/activityLogs.js';
 import exportRouter from './routes/export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,6 +42,8 @@ export function createApp({
   app.use(`${base}/api/saved-meals`, savedMealsRouter);
   app.use(`${base}/api/categories`, categoriesRouter);
   app.use(`${base}/api/weights`, weightsRouter);
+  app.use(`${base}/api/activities`, activitiesRouter);
+  app.use(`${base}/api/activity-logs`, activityLogsRouter);
   app.use(`${base}/api/export`, exportRouter);
 
   if (serveStatic) {

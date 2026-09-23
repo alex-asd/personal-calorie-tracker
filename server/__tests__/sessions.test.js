@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createTestApp } from './helpers/app.js';
-import { makeSession, insertMeal, getDailyTotal } from './helpers/seed.js';
+import {
+  makeSession,
+  insertMeal,
+  getDailyTotal,
+  getPresetActivity,
+  insertActivityLog,
+  getActivityLog,
+} from './helpers/seed.js';
 import { getDb } from '../db.js';
 import { today, addDays } from '../dates.js';
 
@@ -223,6 +230,16 @@ describe('POST /api/sessions/:id/close', () => {
   it('returns 400 for a non-integer session id', async () => {
     const res = await request(app).post('/api/sessions/abc/close').send({});
     expect(res.status).toBe(400);
+  });
+
+  it('preserves daily_activities on close', async () => {
+    const session = makeSession();
+    const steps = getPresetActivity('Steps');
+    insertActivityLog({ sessionId: session.id, activityId: steps.id, amount: 9000 });
+
+    await request(app).post(`/api/sessions/${session.id}/close`).send({});
+
+    expect(getActivityLog(session.id, today(), steps.id).amount).toBe(9000);
   });
 
   it('preserves phase, start_weight_kg, and goal_weight_kg on close', async () => {

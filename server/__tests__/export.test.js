@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createTestApp } from './helpers/app.js';
-import { makeSession, insertMeal } from './helpers/seed.js';
+import {
+  makeSession,
+  insertMeal,
+  insertActivity,
+  getPresetActivity,
+  insertActivityLog,
+} from './helpers/seed.js';
 import { getDb } from '../db.js';
 import { today, addDays } from '../dates.js';
 
@@ -36,6 +42,29 @@ describe('GET /api/export', () => {
     expect(payload.daily_totals).toEqual([{ date: today(), calories: 800, protein: 50 }]);
     expect(payload.daily_weights).toEqual([{ date: today(), weight_kg: 80.5 }]);
     expect(payload.exported_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('includes daily_activities with the activity name and unit, ordered by date', async () => {
+    const session = makeSession({ startDaysAgo: 1 });
+    const steps = getPresetActivity('Steps');
+    const plank = insertActivity({ name: 'Plank', unit: 'sec' });
+    const yesterday = addDays(today(), -1);
+    insertActivityLog({ sessionId: session.id, activityId: plank.id, amount: 90 });
+    insertActivityLog({ sessionId: session.id, activityId: steps.id, amount: 8000 });
+    insertActivityLog({
+      sessionId: session.id,
+      activityId: steps.id,
+      date: yesterday,
+      amount: 5000,
+    });
+
+    const res = await request(app).get('/api/export');
+    const payload = JSON.parse(res.text);
+    expect(payload.daily_activities).toEqual([
+      { date: yesterday, activity_id: steps.id, name: 'Steps', unit: 'steps', amount: 5000 },
+      { date: today(), activity_id: steps.id, name: 'Steps', unit: 'steps', amount: 8000 },
+      { date: today(), activity_id: plank.id, name: 'Plank', unit: 'sec', amount: 90 },
+    ]);
   });
 
   it('sets a Content-Disposition attachment header', async () => {

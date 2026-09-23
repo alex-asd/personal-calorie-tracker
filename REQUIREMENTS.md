@@ -20,12 +20,14 @@ A single-user calorie and macro tracking web app, self-hosted on a Raspberry Pi 
 - **Meal** — belongs to a session and a date; name, calories (required), protein (required), carbs (optional), fat (optional). May optionally reference the SavedMeal it was created from, but stores its own copy of the values so edits/deletes of the source SavedMeal do not affect historical entries.
 - **DailyTotal** — per-day calories and protein; retained when a session is archived and its one-time meals are deleted.
 - **DailyWeight** — per-day weight (kg) for the open session. At most one entry per day; any day from the session start through today can be logged, corrected or cleared (a forgotten weigh-in can be back-filled). Deleted when the session is closed; only the session's starting/ending weight survives in the archive.
+- **Activity** — something the user counts: name (unique, case-insensitive) and unit (e.g. `steps`, `reps`, `sec`). Five presets always exist and can't be renamed or deleted — Steps (steps), Pull-ups, Push-ups, Sit-ups, Squats (reps). The user can add custom activities, rename them, change their unit and delete them (deleting one also deletes its logged amounts). Persists across sessions.
+- **DailyActivity** — per-day running total for one activity in the open session (at most one row per activity per day). Kept when the session is closed so it can be shown in the archive later. No calorie-burn estimation.
 
 Day boundaries follow the Pi's local timezone (midnight to midnight).
 
 ## Pages
 
-1. **Home / Today** — today's overview, today's weight, and the 90-day history table (each history day opens an editor for that day).
+1. **Home / Today** — today's overview, today's weight, today's activities, and the 90-day history table (each history day opens an editor for that day).
 2. **Add Meal** — modal launched from Home (today) or from a day in the history table (any day of the open session).
 3. **Saved Meals** — manage the saved meal library (view, edit, delete) and its categories, grouped by category.
 4. **Archive** — list of closed sessions.
@@ -47,6 +49,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - Today's meals can be added and edited.
 - Earlier days in the open session are editable too: clicking a day in the history opens a modal to log, edit or clear that day's weight and to add, edit, and delete that day's meals. History rows show the logged weight (or "no weight") so missed days stand out.
 - A "today's weight" card lets the user log, edit or clear a single weight value for the current day.
+- An "Activities" card (below the weight-progress chart) lists every activity with today's total. Each row can **add** to the total (e.g. another set of push-ups), **set** it outright (e.g. a step count copied off a watch) or clear it. A "Manage" mode adds, renames and deletes custom activities. Only today is shown for now; past days and the archive view are a follow-up (the API already accepts any day of the open session).
 - The weight-progress chart uses the session's starting weight (when one was entered) as its first point on the start date, and measures "from start" against it. If a weight was also logged on the start date, the starting weight is drawn one day earlier so both points remain and are joined by the line.
 
 ### Adding a meal
@@ -70,8 +73,8 @@ Numeric values are shown next to both bars. Clicking a day opens a modal to add,
 
 - A session spans up to 90 days.
 - The user can close a session at any time, optionally entering a final weight.
-- On close: meals not marked reusable are deleted; per-day weight logs are deleted; daily totals (calories + protein) and the session's starting/ending weights are preserved. The session moves to the Archive.
-- On day 90: warn the user; on day > 90, block further meal and weight entries — including edits to earlier days — until the session is closed. No auto-close.
+- On close: meals not marked reusable are deleted; per-day weight logs are deleted; daily totals (calories + protein), per-day activity totals and the session's starting/ending weights are preserved. The session moves to the Archive.
+- On day 90: warn the user; on day > 90, block further meal, weight and activity entries — including edits to earlier days — until the session is closed. No auto-close.
 
 ### Saved Meals page
 
@@ -94,7 +97,7 @@ Numeric values are shown next to both bars. Clicking a day opens a modal to add,
 ### Export
 
 - Pretty-printed JSON of the current open session only.
-- Includes the session row, daily totals, per-day weights, and the session's meal entries with full nutrition data.
+- Includes the session row, daily totals, per-day weights, per-day activity totals, and the session's meal entries with full nutrition data.
 - Excludes the saved-meal library.
 
 ## Implementation notes
@@ -102,7 +105,7 @@ Numeric values are shown next to both bars. Clicking a day opens a modal to add,
 The following were left open in the initial spec and resolved during build:
 
 1. **Protein bar coloring** — implemented as red below target, green at/above target.
-2. **JSON export schema** — `{ exported_at, session, daily_totals, daily_weights, meals }`; see `server/routes/export.js`.
+2. **JSON export schema** — `{ exported_at, session, daily_totals, daily_weights, daily_activities, meals }`; see `server/routes/export.js`.
 3. **Protein target requiredness** — required at session creation (server returns 400 if missing or non-positive).
 4. **Add Meal UI** — implemented as a modal launched from the Home page.
 

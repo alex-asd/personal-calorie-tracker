@@ -26,11 +26,21 @@ router.get('/', (req, res) => {
     .prepare(`SELECT date, weight_kg FROM daily_weights WHERE session_id = ? ORDER BY date ASC`)
     .all(session.id);
 
+  const dailyActivities = db
+    .prepare(
+      `SELECT d.date, d.activity_id, a.name, a.unit, d.amount
+       FROM daily_activities d JOIN activities a ON a.id = d.activity_id
+       WHERE d.session_id = ?
+       ORDER BY d.date ASC, a.is_preset DESC, a.id ASC`
+    )
+    .all(session.id);
+
   const payload = {
     exported_at: new Date().toISOString(),
     session,
     daily_totals: dailyTotals,
     daily_weights: dailyWeights,
+    daily_activities: dailyActivities,
     meals,
   };
 

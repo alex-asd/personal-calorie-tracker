@@ -20,4 +20,11 @@ export const queryKeys = {
     all: ['weights'],
     history: (sessionId) => ['weights', 'history', sessionId],
   },
+  activities: {
+    list: () => ['activities'],
+  },
+  activityLogs: {
+    all: ['activityLogs'],
+    list: (sessionId, date) => ['activityLogs', sessionId, date],
+  },
 };
