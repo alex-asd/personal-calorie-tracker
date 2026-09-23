@@ -49,7 +49,10 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - Today's meals can be added and edited.
 - Earlier days in the open session are editable too: clicking a day in the history opens a modal to log, edit or clear that day's weight and to add, edit, and delete that day's meals. History rows show the logged weight (or "no weight") so missed days stand out.
 - A "today's weight" card lets the user log, edit or clear a single weight value for the current day.
-- An "Activities" card (below the weight-progress chart) lists every activity with today's total. Each row can **add** to the total (e.g. another set of push-ups), **set** it outright (e.g. a step count copied off a watch) or clear it. A "Manage" mode adds, renames and deletes custom activities. Only today is shown for now; past days and the archive view are a follow-up (the API already accepts any day of the open session).
+- An "Activities" card (below the weight-progress chart) lists every activity with today's total. Each row can **add** to the total (e.g. another set of push-ups), **set** it outright (e.g. a step count copied off a watch) or clear it. A "Manage" mode adds, renames and deletes custom activities. The card itself only edits today; the API already accepts any day of the open session.
+- Two activity charts sit below the Activities card, covering the whole session:
+  - **Activity by day** — one small bar strip per logged activity, each on its own scale so steps and reps are equally readable, with the session total beside it. Hovering (or dragging on touch) a day shows that day's amount for every activity.
+  - **Session totals** — running (cumulative) totals as lines. Only activities with the same unit share the chart: reps by default, with a switch to other units (e.g. steps, sec) when those are logged. Chips toggle individual lines and show each total (or the total as of the hovered day).
 - The weight-progress chart uses the session's starting weight (when one was entered) as its first point on the start date, and measures "from start" against it. If a weight was also logged on the start date, the starting weight is drawn one day earlier so both points remain and are joined by the line.
 
 ### Adding a meal

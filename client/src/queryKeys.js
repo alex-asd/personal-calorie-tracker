@@ -26,5 +26,6 @@ export const queryKeys = {
   activityLogs: {
     all: ['activityLogs'],
     list: (sessionId, date) => ['activityLogs', sessionId, date],
+    history: (sessionId) => ['activityLogs', 'history', sessionId],
   },
 };

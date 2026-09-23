@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useAddActivity, useSetActivity, useClearActivity } from '../hooks/useActivities.js';
-
-function formatAmount(n) {
-  return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+import { formatAmount } from '../numbers.js';
 
 // One activity's total for a single day, with controls to add to it (a set of
 // push-ups), replace it (a step count off a watch) or clear it. `date` is a

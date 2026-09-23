@@ -15,6 +15,8 @@ import DayDetailModal from '../components/DayDetailModal.jsx';
 import WeightLogger from '../components/WeightLogger.jsx';
 import WeightChart from '../components/WeightChart.jsx';
 import ActivityLogger from '../components/ActivityLogger.jsx';
+import ActivityDailyChart from '../components/ActivityDailyChart.jsx';
+import ActivityTotalsChart from '../components/ActivityTotalsChart.jsx';
 
 export default function Home() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useSession();
@@ -86,6 +88,8 @@ export default function Home() {
           <WeightLogger disabled={session.blocked} />
           <WeightChart />
           <ActivityLogger disabled={session.blocked} />
+          <ActivityDailyChart session={session} />
+          <ActivityTotalsChart session={session} />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable
             days={pastDays}

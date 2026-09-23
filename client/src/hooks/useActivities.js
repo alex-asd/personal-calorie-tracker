@@ -1,7 +1,13 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { daysBetween, shiftDateString, todayString } from '../dates.js';
 import { useSession } from './useSession.js';
+
+// Charts span at least this many days so a new session isn't drawn as one
+// full-width bar; the unused tail is simply empty.
+const MIN_WINDOW_DAYS = 14;
 
 // The activity catalog: the five presets plus any custom activities.
 export function useActivities() {
@@ -66,6 +72,66 @@ export function useActivityLogs(date) {
     },
     enabled: !!sessionId,
   });
+}
+
+// Every day-total logged in one session (open or closed). Lives under
+// `activityLogs.all`, so every log mutation refreshes it.
+export function useActivityHistory(sessionId) {
+  return useQuery({
+    queryKey: queryKeys.activityLogs.history(sessionId),
+    queryFn: () => api.get(`/api/sessions/${sessionId}/activity-logs`),
+    enabled: sessionId != null,
+  });
+}
+
+// What the activity charts draw for one session: the day window (start date to
+// end date, or today while open) and one series per activity logged at least
+// once, in catalog order. `values[i]` is day i's total, 0 on days not logged.
+export function useActivitySeries(session) {
+  const activitiesQuery = useActivities();
+  const historyQuery = useActivityHistory(session?.id);
+  const today = todayString();
+  const activities = activitiesQuery.data;
+  const history = historyQuery.data;
+
+  const data = useMemo(() => {
+    if (!session || !activities || !history) return null;
+    const start = session.start_date;
+    const dayCount = daysBetween(start, session.end_date ?? today) + 1;
+
+    const byActivity = new Map();
+    for (const log of history.logs) {
+      const i = daysBetween(start, log.date);
+      if (i < 0 || i >= dayCount) continue;
+      if (!byActivity.has(log.activity_id)) {
+        byActivity.set(log.activity_id, new Array(dayCount).fill(0));
+      }
+      byActivity.get(log.activity_id)[i] = log.amount;
+    }
+
+    const series = activities
+      .filter((a) => byActivity.has(a.id))
+      .map((activity) => {
+        const values = byActivity.get(activity.id);
+        return { activity, values, total: values.reduce((sum, v) => sum + v, 0) };
+      });
+
+    const windowDays = Math.max(dayCount, MIN_WINDOW_DAYS);
+    return {
+      start,
+      dayCount,
+      windowDays,
+      windowEnd: shiftDateString(start, windowDays - 1),
+      activities,
+      series,
+    };
+  }, [session, activities, history, today]);
+
+  return {
+    data,
+    isLoading: activitiesQuery.isLoading || historyQuery.isLoading,
+    error: activitiesQuery.error || historyQuery.error,
+  };
 }
 
 // Every log write also refreshes the catalog, whose `log_count` feeds the

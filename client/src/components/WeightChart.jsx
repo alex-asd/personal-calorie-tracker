@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { useSession } from '../hooks/useSession.js';
 import { useWeightHistory } from '../hooks/useWeights.js';
-import { parseLocal, shiftDateString, todayString } from '../dates.js';
+import { formatShort, parseLocal, shiftDateString, todayString } from '../dates.js';
 
 const VBW = 600;
 const VBH = 220;
@@ -36,10 +36,6 @@ function regression(pts) {
 function fmtDelta(v) {
   if (Math.abs(v) < 0.05) return '±0.0 kg';
   return `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)} kg`;
-}
-
-function formatShort(dateStr) {
-  return parseLocal(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export default function WeightChart() {
