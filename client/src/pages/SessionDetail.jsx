@@ -2,7 +2,10 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { useActivitySeries } from '../hooks/useActivities.js';
 import DayHistoryTable from '../components/DayHistoryTable.jsx';
+import ActivityDailyChart from '../components/ActivityDailyChart.jsx';
+import ActivityTotalsChart from '../components/ActivityTotalsChart.jsx';
 import { parseLocal } from '../dates.js';
 
 function fmtRange(start, end) {
@@ -36,6 +39,7 @@ export default function SessionDetail() {
   });
 
   const session = sessionQuery.data;
+  const { data: activityData } = useActivitySeries(session);
   const days = daysQuery.data ?? [];
   const isLoading = sessionQuery.isLoading || daysQuery.isLoading;
   const error = sessionQuery.error || daysQuery.error;
@@ -69,7 +73,14 @@ export default function SessionDetail() {
               </p>
             )}
           </section>
-          <DayHistoryTable days={days} session={session} showRelative={false} />
+          <ActivityDailyChart session={session} />
+          <ActivityTotalsChart session={session} />
+          <DayHistoryTable
+            days={days}
+            session={session}
+            showRelative={false}
+            activitiesByDate={activityData?.byDate}
+          />
         </>
       )}
     </main>

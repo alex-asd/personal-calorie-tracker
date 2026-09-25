@@ -26,7 +26,12 @@ const EXPECTED_FILES = [
   '003_meal_categories.sql',
   '004_session_goal_weight.sql',
   '005_session_phase.sql',
+  '006_activities.sql',
 ];
+
+// The files that existed under the pre-runner, inline-schema regime. A legacy
+// database can only ever carry these; later files always run through the runner.
+const LEGACY_FILES = EXPECTED_FILES.slice(0, EXPECTED_FILES.indexOf('005_session_phase.sql') + 1);
 
 describe('runMigrations on a fresh database', () => {
   it('applies every migration file in order and records each in _migrations', () => {
@@ -51,6 +56,8 @@ describe('runMigrations on a fresh database', () => {
       'daily_totals',
       'daily_weights',
       'categories',
+      'activities',
+      'daily_activities',
       '_migrations',
     ]) {
       expect(tables).toContain(t);
@@ -68,6 +75,21 @@ describe('runMigrations on a fresh database', () => {
     expect(cols).toEqual(
       expect.arrayContaining(['start_weight_kg', 'end_weight_kg', 'goal_weight_kg', 'phase'])
     );
+  });
+
+  it('seeds the five preset activities', () => {
+    runMigrations(db);
+
+    const presets = db
+      .prepare(`SELECT name, unit FROM activities WHERE is_preset = 1 ORDER BY id`)
+      .all();
+    expect(presets).toEqual([
+      { name: 'Steps', unit: 'steps' },
+      { name: 'Pull-ups', unit: 'reps' },
+      { name: 'Push-ups', unit: 'reps' },
+      { name: 'Sit-ups', unit: 'reps' },
+      { name: 'Squats', unit: 'reps' },
+    ]);
   });
 
   it('enforces the at-most-one-open-session partial unique index', () => {
@@ -93,11 +115,10 @@ describe('runMigrations is idempotent', () => {
 });
 
 describe('legacy schema short-circuit', () => {
-  it('records all migrations as applied without re-running them when sessions exists and _migrations is empty', () => {
-    // Bring the DB up to head, then wipe _migrations to mimic a pre-runner
-    // production database that already has the canonical schema.
-    runMigrations(db);
-    db.exec(`DELETE FROM _migrations`);
+  it('records the legacy migrations as applied without re-running them when sessions exists and _migrations is empty', () => {
+    // Mimic a production database from the inline-schema era: every legacy
+    // file's DDL has run, but there is no _migrations bookkeeping.
+    buildLegacySchemaThrough(db, LEGACY_FILES.at(-1));
 
     // Re-running must NOT throw — if the runner actually re-ran the ALTERs,
     // SQLite would error with "duplicate column name".
@@ -108,6 +129,9 @@ describe('legacy schema short-circuit', () => {
       .all()
       .map((r) => r.name);
     expect(applied).toEqual(EXPECTED_FILES);
+
+    // Post-legacy migrations ran normally on top.
+    expect(tableNames(db)).toEqual(expect.arrayContaining(['activities', 'daily_activities']));
 
     // Schema should be untouched (still includes the columns from later migrations).
     const cols = db
@@ -193,7 +217,7 @@ describe('repairing migrations falsely recorded as applied', () => {
       `CREATE TABLE _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))`
     );
     const record = db.prepare(`INSERT INTO _migrations (name) VALUES (?)`);
-    for (const file of EXPECTED_FILES) record.run(file);
+    for (const file of LEGACY_FILES) record.run(file);
     expect(tableNames(db)).not.toContain('categories');
 
     expect(() => runMigrations(db)).not.toThrow();
@@ -203,7 +227,8 @@ describe('repairing migrations falsely recorded as applied', () => {
     expect(columnNames(db, 'sessions')).toEqual(
       expect.arrayContaining(['goal_weight_kg', 'phase'])
     );
-    // No duplicate rows — the files were already recorded.
+    // No duplicate rows — the legacy files were already recorded; 006 ran normally.
     expect(appliedNames(db)).toEqual(EXPECTED_FILES);
+    expect(tableNames(db)).toContain('activities');
   });
 });

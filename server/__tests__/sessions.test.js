@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createTestApp } from './helpers/app.js';
-import { makeSession, insertMeal, getDailyTotal } from './helpers/seed.js';
+import {
+  makeSession,
+  insertMeal,
+  getDailyTotal,
+  getPresetActivity,
+  insertActivityLog,
+  getActivityLog,
+} from './helpers/seed.js';
 import { getDb } from '../db.js';
 import { today, addDays } from '../dates.js';
 
@@ -225,6 +232,16 @@ describe('POST /api/sessions/:id/close', () => {
     expect(res.status).toBe(400);
   });
 
+  it('preserves daily_activities on close', async () => {
+    const session = makeSession();
+    const steps = getPresetActivity('Steps');
+    insertActivityLog({ sessionId: session.id, activityId: steps.id, amount: 9000 });
+
+    await request(app).post(`/api/sessions/${session.id}/close`).send({});
+
+    expect(getActivityLog(session.id, today(), steps.id).amount).toBe(9000);
+  });
+
   it('preserves phase, start_weight_kg, and goal_weight_kg on close', async () => {
     const session = makeSession({
       phase: 'bulk',
@@ -349,5 +366,64 @@ describe('GET /api/sessions/:id/days', () => {
   it('returns 400 for a non-integer session id', async () => {
     const res = await request(app).get('/api/sessions/abc/days');
     expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/sessions/:id/activity-logs', () => {
+  it("returns only that session's logs, ordered by date then activity", async () => {
+    const other = makeSession({
+      status: 'closed',
+      startDaysAgo: 30,
+      end_date: addDays(today(), -20),
+    });
+    const session = makeSession({ startDaysAgo: 2 });
+    const steps = getPresetActivity('Steps');
+    const pushups = getPresetActivity('Push-ups');
+    const yesterday = addDays(today(), -1);
+    insertActivityLog({ sessionId: session.id, activityId: pushups.id, amount: 30 });
+    insertActivityLog({ sessionId: session.id, activityId: steps.id, amount: 9000 });
+    insertActivityLog({
+      sessionId: session.id,
+      activityId: pushups.id,
+      date: yesterday,
+      amount: 20,
+    });
+    insertActivityLog({ sessionId: other.id, activityId: steps.id, date: other.start_date });
+
+    const res = await request(app).get(`/api/sessions/${session.id}/activity-logs`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      sessionId: session.id,
+      startDate: session.start_date,
+      endDate: null,
+      logs: [
+        { date: yesterday, activity_id: pushups.id, amount: 20 },
+        { date: today(), activity_id: steps.id, amount: 9000 },
+        { date: today(), activity_id: pushups.id, amount: 30 },
+      ],
+    });
+  });
+
+  it('returns a closed session’s preserved logs with its end date', async () => {
+    const session = makeSession({ startDaysAgo: 3 });
+    const squats = getPresetActivity('Squats');
+    insertActivityLog({ sessionId: session.id, activityId: squats.id, amount: 50 });
+    await request(app).post(`/api/sessions/${session.id}/close`).send({});
+
+    const res = await request(app).get(`/api/sessions/${session.id}/activity-logs`);
+    expect(res.status).toBe(200);
+    expect(res.body.endDate).toBe(today());
+    expect(res.body.logs).toEqual([{ date: today(), activity_id: squats.id, amount: 50 }]);
+  });
+
+  it('returns an empty list when nothing was logged', async () => {
+    const session = makeSession();
+    const res = await request(app).get(`/api/sessions/${session.id}/activity-logs`);
+    expect(res.body.logs).toEqual([]);
+  });
+
+  it('returns 404 for an unknown session and 400 for a non-integer id', async () => {
+    expect((await request(app).get('/api/sessions/9999/activity-logs')).status).toBe(404);
+    expect((await request(app).get('/api/sessions/abc/activity-logs')).status).toBe(400);
   });
 });

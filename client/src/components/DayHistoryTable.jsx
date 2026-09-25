@@ -1,5 +1,14 @@
 import ProgressBar from './ProgressBar.jsx';
 import { todayString, formatLabel } from '../dates.js';
+import { formatAmount } from '../numbers.js';
+
+// "Push-ups 35", "Steps 8,432", "Plank 90 sec": the unit is left off when the
+// name already implies it (reps, or a unit that is the name itself).
+function activityAmount({ activity, amount }) {
+  const unit = activity.unit.trim().toLowerCase();
+  const implied = unit === 'reps' || unit === activity.name.trim().toLowerCase();
+  return implied ? formatAmount(amount) : `${formatAmount(amount)} ${activity.unit}`;
+}
 
 export default function DayHistoryTable({
   days,
@@ -7,6 +16,7 @@ export default function DayHistoryTable({
   showRelative = true,
   onSelectDay,
   weightsByDate,
+  activitiesByDate,
 }) {
   if (!days || days.length === 0) return null;
   const today = showRelative ? todayString() : null;
@@ -65,6 +75,15 @@ export default function DayHistoryTable({
                 </div>
               </div>
             </div>
+            {activitiesByDate?.[d.date] && (
+              <div className="day-activities">
+                {activitiesByDate[d.date].map((entry) => (
+                  <span key={entry.activity.id} className="day-activity">
+                    <span className="muted">{entry.activity.name}</span> {activityAmount(entry)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

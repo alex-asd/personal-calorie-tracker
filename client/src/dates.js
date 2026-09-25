@@ -14,6 +14,14 @@ export function shiftDateString(s, deltaDays) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+export function daysBetween(fromStr, toStr) {
+  return Math.round((parseLocal(toStr) - parseLocal(fromStr)) / 86400000);
+}
+
+export function formatShort(dateStr) {
+  return parseLocal(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export function formatLabel(dateStr, today = todayString()) {
   if (today && dateStr === today) return 'Today';
   if (today && dateStr === shiftDateString(today, -1)) return 'Yesterday';

@@ -100,3 +100,32 @@ export function getMealRow(id) {
   const db = getDb();
   return db.prepare(`SELECT * FROM meals WHERE id = ?`).get(id);
 }
+
+export function insertActivity({ name = 'Test activity', unit = 'reps', is_preset = 0 } = {}) {
+  const db = getDb();
+  const info = db
+    .prepare(`INSERT INTO activities (name, unit, is_preset) VALUES (?, ?, ?)`)
+    .run(name, unit, is_preset);
+  return db.prepare(`SELECT * FROM activities WHERE id = ?`).get(info.lastInsertRowid);
+}
+
+// Presets are seeded by migration 006; look one up by name.
+export function getPresetActivity(name) {
+  const db = getDb();
+  return db.prepare(`SELECT * FROM activities WHERE name = ? AND is_preset = 1`).get(name);
+}
+
+export function insertActivityLog({ sessionId, activityId, date = today(), amount = 10 }) {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO daily_activities (session_id, date, activity_id, amount) VALUES (?, ?, ?, ?)`
+  ).run(sessionId, date, activityId, amount);
+  return getActivityLog(sessionId, date, activityId);
+}
+
+export function getActivityLog(sessionId, date, activityId) {
+  const db = getDb();
+  return db
+    .prepare(`SELECT * FROM daily_activities WHERE session_id = ? AND date = ? AND activity_id = ?`)
+    .get(sessionId, date, activityId);
+}

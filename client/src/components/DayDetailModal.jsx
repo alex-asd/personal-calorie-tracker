@@ -6,6 +6,7 @@ import { formatLabel } from '../dates.js';
 import MealList from './MealList.jsx';
 import AddMealModal from './AddMealModal.jsx';
 import WeightEntry from './WeightEntry.jsx';
+import ActivityList from './ActivityList.jsx';
 
 export default function DayDetailModal({ date, session, onClose }) {
   const [adding, setAdding] = useState(false);
@@ -81,6 +82,15 @@ export default function DayDetailModal({ date, session, onClose }) {
           canEdit={canEdit}
           emptyMessage="No meals logged for this day yet."
         />
+
+        <section className="card modal-activities">
+          <h2>Activities</h2>
+          <ActivityList
+            date={date}
+            disabled={!canEdit}
+            blockedMessage="Session is past day 90 — close it to edit activities."
+          />
+        </section>
       </div>
     </div>
   );

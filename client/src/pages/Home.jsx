@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../hooks/useSession.js';
 import { useWeightHistory } from '../hooks/useWeights.js';
+import { useActivitySeries } from '../hooks/useActivities.js';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import { todayString } from '../dates.js';
@@ -14,6 +15,9 @@ import DayHistoryTable from '../components/DayHistoryTable.jsx';
 import DayDetailModal from '../components/DayDetailModal.jsx';
 import WeightLogger from '../components/WeightLogger.jsx';
 import WeightChart from '../components/WeightChart.jsx';
+import ActivityLogger from '../components/ActivityLogger.jsx';
+import ActivityDailyChart from '../components/ActivityDailyChart.jsx';
+import ActivityTotalsChart from '../components/ActivityTotalsChart.jsx';
 
 export default function Home() {
   const { data: session, isLoading: sessionLoading, error: sessionError } = useSession();
@@ -43,6 +47,8 @@ export default function Home() {
     () => Object.fromEntries((weightsQuery.data?.weights ?? []).map((w) => [w.date, w.weight_kg])),
     [weightsQuery.data]
   );
+
+  const { data: activityData } = useActivitySeries(session);
 
   const meals = mealsQuery.data ?? [];
   const days = daysQuery.data ?? [];
@@ -84,12 +90,16 @@ export default function Home() {
           />
           <WeightLogger disabled={session.blocked} />
           <WeightChart />
+          <ActivityLogger disabled={session.blocked} />
+          <ActivityDailyChart session={session} />
+          <ActivityTotalsChart session={session} />
           {daysQuery.error && <p className="error">{daysQuery.error.message}</p>}
           <DayHistoryTable
             days={pastDays}
             session={session}
             onSelectDay={setSelectedDate}
             weightsByDate={weightsByDate}
+            activitiesByDate={activityData?.byDate}
           />
         </>
       )}

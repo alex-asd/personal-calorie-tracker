@@ -106,6 +106,7 @@ router.post('/:id/close', (req, res) => {
     endWeight = w;
   }
 
+  // daily_activities are kept (like daily_totals) so the archive can show them.
   const tx = db.transaction(() => {
     db.prepare(`DELETE FROM meals WHERE session_id = ?`).run(id);
     db.prepare(`DELETE FROM daily_weights WHERE session_id = ?`).run(id);
@@ -164,6 +165,29 @@ router.get('/:id/days', (req, res) => {
     endDate: session.end_date,
     days,
   });
+});
+
+// Every day-total logged for any activity in the session, open or closed
+// (closing keeps daily_activities). The client joins names/units from the
+// activity catalog and lays the days out from startDate..endDate (or today).
+router.get('/:id/activity-logs', (req, res) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: 'invalid session id' });
+  }
+
+  const session = db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id);
+  if (!session) return res.status(404).json({ error: 'session not found' });
+
+  const logs = db
+    .prepare(
+      `SELECT date, activity_id, amount FROM daily_activities
+       WHERE session_id = ? ORDER BY date ASC, activity_id ASC`
+    )
+    .all(id);
+
+  res.json({ sessionId: id, startDate: session.start_date, endDate: session.end_date, logs });
 });
 
 router.get('/:id', (req, res) => {
