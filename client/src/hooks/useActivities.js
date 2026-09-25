@@ -2,11 +2,12 @@ import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
-import { daysBetween, shiftDateString, todayString } from '../dates.js';
+import { daysBetween, formatLabel, formatShort, shiftDateString, todayString } from '../dates.js';
 import { useSession } from './useSession.js';
 
-// Charts span at least this many days so a new session isn't drawn as one
-// full-width bar; the unused tail is simply empty.
+// While a session is open, charts span at least this many days so a new
+// session isn't drawn as one full-width bar; the empty tail is room to grow.
+// Closed sessions span exactly their own days.
 const MIN_WINDOW_DAYS = 14;
 
 // The activity catalog: the five presets plus any custom activities.
@@ -87,6 +88,8 @@ export function useActivityHistory(sessionId) {
 // What the activity charts draw for one session: the day window (start date to
 // end date, or today while open) and one series per activity logged at least
 // once, in catalog order. `values[i]` is day i's total, 0 on days not logged.
+// `byDate` regroups the same numbers per day for the History rows:
+// `{ [date]: [{ activity, amount }] }`, catalog order, logged activities only.
 export function useActivitySeries(session) {
   const activitiesQuery = useActivities();
   const historyQuery = useActivityHistory(session?.id);
@@ -116,14 +119,27 @@ export function useActivitySeries(session) {
         return { activity, values, total: values.reduce((sum, v) => sum + v, 0) };
       });
 
-    const windowDays = Math.max(dayCount, MIN_WINDOW_DAYS);
+    const byDate = {};
+    for (const { activity, values } of series) {
+      values.forEach((amount, i) => {
+        if (amount) (byDate[shiftDateString(start, i)] ??= []).push({ activity, amount });
+      });
+    }
+
+    const open = session.status === 'open';
+    const windowDays = open ? Math.max(dayCount, MIN_WINDOW_DAYS) : dayCount;
+    const windowEnd = shiftDateString(start, windowDays - 1);
+    // "Today"/"Yesterday" only make sense while the session is still running.
+    const relativeTo = open ? today : null;
     return {
       start,
       dayCount,
       windowDays,
-      windowEnd: shiftDateString(start, windowDays - 1),
+      endLabel: relativeTo && windowEnd === today ? 'Today' : formatShort(windowEnd),
+      dayLabel: (i) => formatLabel(shiftDateString(start, i), relativeTo),
       activities,
       series,
+      byDate,
     };
   }, [session, activities, history, today]);
 

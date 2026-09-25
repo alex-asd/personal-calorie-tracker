@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useActivitySeries } from '../hooks/useActivities.js';
-import { formatLabel, formatShort, shiftDateString, todayString } from '../dates.js';
+import { formatShort } from '../dates.js';
 import { formatAmount } from '../numbers.js';
 
 const BAR_FILL = 0.7; // share of each day's slot the bar covers
@@ -19,6 +19,9 @@ export default function ActivityDailyChart({ session }) {
   } else if (error) {
     body = <p className="error">{error.message}</p>;
   } else if (data.series.length === 0) {
+    // Archived sessions (including ones from before activity tracking) have
+    // nothing to add, so skip the card rather than show an empty one.
+    if (session.status === 'closed') return null;
     body = <p className="muted">Log an activity to see it here.</p>;
   }
   if (body) {
@@ -30,7 +33,7 @@ export default function ActivityDailyChart({ session }) {
     );
   }
 
-  const { start, dayCount, windowDays, windowEnd, series } = data;
+  const { start, dayCount, windowDays, endLabel, dayLabel, series } = data;
 
   function onPointer(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -43,7 +46,7 @@ export default function ActivityDailyChart({ session }) {
       <div className="card-header">
         <h2>Activity by day</h2>
         <span className="muted small">
-          {hoverDay != null ? formatLabel(shiftDateString(start, hoverDay)) : 'Session total'}
+          {hoverDay != null ? dayLabel(hoverDay) : 'Session total'}
         </span>
       </div>
 
@@ -95,7 +98,7 @@ export default function ActivityDailyChart({ session }) {
 
       <div className="chart-axis">
         <span>{formatShort(start)}</span>
-        <span>{windowEnd === todayString() ? 'Today' : formatShort(windowEnd)}</span>
+        <span>{endLabel}</span>
       </div>
     </section>
   );

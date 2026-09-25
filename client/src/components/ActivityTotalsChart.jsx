@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useActivitySeries } from '../hooks/useActivities.js';
 import { useElementWidth } from '../hooks/useElementWidth.js';
-import { formatLabel, formatShort, shiftDateString, todayString } from '../dates.js';
+import { formatShort } from '../dates.js';
 import { formatAmount, formatCompact } from '../numbers.js';
 
 const HEIGHT = 200;
@@ -51,6 +51,9 @@ export default function ActivityTotalsChart({ session }) {
   } else if (error) {
     body = <p className="error">{error.message}</p>;
   } else if (data.series.length === 0) {
+    // Archived sessions (including ones from before activity tracking) have
+    // nothing to add, so skip the card rather than show an empty one.
+    if (session.status === 'closed') return null;
     body = <p className="muted">Log an activity to see your running totals.</p>;
   }
   if (body) {
@@ -62,7 +65,7 @@ export default function ActivityTotalsChart({ session }) {
     );
   }
 
-  const { start, dayCount, windowDays, windowEnd, activities, series } = data;
+  const { start, dayCount, windowDays, endLabel, dayLabel, activities, series } = data;
 
   const units = [];
   for (const s of series) {
@@ -104,7 +107,8 @@ export default function ActivityTotalsChart({ session }) {
   const plotW = Math.max(1, width - PAD.left - padRight);
   const plotH = HEIGHT - PAD.top - PAD.bottom;
   const top = niceCeil(Math.max(0, ...visible.map((l) => l.cum[last])));
-  const xPx = (i) => PAD.left + (i / (windowDays - 1)) * plotW;
+  const span = Math.max(1, windowDays - 1); // a one-day session is a single point
+  const xPx = (i) => PAD.left + (i / span) * plotW;
   const yPx = (v) => PAD.top + (1 - v / top) * plotH;
 
   const endLabels = spreadLabels(
@@ -115,7 +119,7 @@ export default function ActivityTotalsChart({ session }) {
 
   function onPointer(e) {
     const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
-    const i = Math.round(((e.clientX - rect.left - PAD.left) / plotW) * (windowDays - 1));
+    const i = Math.round(((e.clientX - rect.left - PAD.left) / plotW) * span);
     setHoverDay(Math.max(0, Math.min(last, i)));
   }
 
@@ -124,7 +128,7 @@ export default function ActivityTotalsChart({ session }) {
       <div className="card-header">
         <h2>Session totals</h2>
         <span className="muted small">
-          {hoverDay != null ? formatLabel(shiftDateString(start, hoverDay)) : 'Session total'}
+          {hoverDay != null ? dayLabel(hoverDay) : 'Session total'}
         </span>
       </div>
 
@@ -192,7 +196,7 @@ export default function ActivityTotalsChart({ session }) {
               {formatShort(start)}
             </text>
             <text className="chart-axis-text" x={PAD.left + plotW} y={HEIGHT - 6} textAnchor="end">
-              {windowEnd === todayString() ? 'Today' : formatShort(windowEnd)}
+              {endLabel}
             </text>
 
             {hoverDay != null && (

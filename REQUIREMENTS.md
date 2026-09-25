@@ -21,7 +21,7 @@ A single-user calorie and macro tracking web app, self-hosted on a Raspberry Pi 
 - **DailyTotal** — per-day calories and protein; retained when a session is archived and its one-time meals are deleted.
 - **DailyWeight** — per-day weight (kg) for the open session. At most one entry per day; any day from the session start through today can be logged, corrected or cleared (a forgotten weigh-in can be back-filled). Deleted when the session is closed; only the session's starting/ending weight survives in the archive.
 - **Activity** — something the user counts: name (unique, case-insensitive) and unit (e.g. `steps`, `reps`, `sec`). Five presets always exist and can't be renamed or deleted — Steps (steps), Pull-ups, Push-ups, Sit-ups, Squats (reps). The user can add custom activities, rename them, change their unit and delete them (deleting one also deletes its logged amounts). Persists across sessions.
-- **DailyActivity** — per-day running total for one activity in the open session (at most one row per activity per day). Kept when the session is closed so it can be shown in the archive later. No calorie-burn estimation.
+- **DailyActivity** — per-day running total for one activity in the open session (at most one row per activity per day). Kept when the session is closed and shown in the archive's activity charts. No calorie-burn estimation.
 
 Day boundaries follow the Pi's local timezone (midnight to midnight).
 
@@ -47,7 +47,7 @@ Day boundaries follow the Pi's local timezone (midnight to midnight).
 - Shows today's totals: calories, protein, carbs, fat.
 - "Add meal" button in the top right.
 - Today's meals can be added and edited.
-- Earlier days in the open session are editable too: clicking a day in the history opens a modal to log, edit or clear that day's weight and to add, edit, and delete that day's meals. History rows show the logged weight (or "no weight") so missed days stand out.
+- Earlier days in the open session are editable too: clicking a day in the history opens a modal to log, edit or clear that day's weight and activity totals, and to add, edit, and delete that day's meals. History rows show the logged weight (or "no weight") so missed days stand out, and a line of that day's activity totals when any were logged.
 - A "today's weight" card lets the user log, edit or clear a single weight value for the current day.
 - An "Activities" card (below the weight-progress chart) lists every activity with today's total. Each row can **add** to the total (e.g. another set of push-ups), **set** it outright (e.g. a step count copied off a watch) or clear it. A "Manage" mode adds, renames and deletes custom activities. The card itself only edits today; the API already accepts any day of the open session.
 - Two activity charts sit below the Activities card, covering the whole session:
@@ -96,6 +96,7 @@ Numeric values are shown next to both bars. Clicking a day opens a modal to add,
 
 - Per-day totals (calories + protein only) for the selected archived session.
 - Shows starting and ending weights when recorded.
+- Shows the same two activity charts as Home (Activity by day, Session totals), read-only and spanning exactly the session's days. Hidden when the session has no activity logs.
 
 ### Export
 

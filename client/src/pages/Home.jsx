@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from '../hooks/useSession.js';
 import { useWeightHistory } from '../hooks/useWeights.js';
+import { useActivitySeries } from '../hooks/useActivities.js';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import { todayString } from '../dates.js';
@@ -46,6 +47,8 @@ export default function Home() {
     () => Object.fromEntries((weightsQuery.data?.weights ?? []).map((w) => [w.date, w.weight_kg])),
     [weightsQuery.data]
   );
+
+  const { data: activityData } = useActivitySeries(session);
 
   const meals = mealsQuery.data ?? [];
   const days = daysQuery.data ?? [];
@@ -96,6 +99,7 @@ export default function Home() {
             session={session}
             onSelectDay={setSelectedDate}
             weightsByDate={weightsByDate}
+            activitiesByDate={activityData?.byDate}
           />
         </>
       )}

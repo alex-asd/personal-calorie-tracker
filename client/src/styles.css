@@ -762,6 +762,7 @@ button.danger {
 
 /* Activities (Today card) */
 .activity-rows {
+  container-type: inline-size;
   list-style: none;
   padding: 0;
   margin: 0.5rem 0 0;
@@ -841,7 +842,7 @@ button.danger {
   margin: 0;
 }
 
-@media (max-width: 560px) {
+@container (max-width: 520px) {
   .activity-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -875,6 +876,10 @@ button.danger {
 
 .activity-new .activity-unit-input {
   flex: 0 1 7rem;
+}
+
+.modal-activities {
+  margin-top: 0.75rem;
 }
 
 .meal-item .activity-new input {
@@ -1067,6 +1072,21 @@ button.danger {
     grid-template-columns: 1fr;
     gap: 0.4rem;
   }
+}
+
+.day-activities {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-activity {
+  white-space: nowrap;
 }
 
 .day-label-main {
