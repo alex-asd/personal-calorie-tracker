@@ -22,6 +22,12 @@ export function formatShort(dateStr) {
   return parseLocal(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// "Sep 22 – 28" or "Sep 29 – Oct 5" (ordering and separator per the user's locale).
+export function formatRange(fromStr, toStr) {
+  const fmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+  return fmt.formatRange(parseLocal(fromStr), parseLocal(toStr));
+}
+
 export function formatLabel(dateStr, today = todayString()) {
   if (today && dateStr === today) return 'Today';
   if (today && dateStr === shiftDateString(today, -1)) return 'Yesterday';

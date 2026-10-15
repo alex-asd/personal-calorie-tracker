@@ -650,6 +650,78 @@ button.danger {
   color: var(--error);
 }
 
+/* Third line of a stat tile, e.g. the week average's "vs last week" delta. */
+.weight-stat-sub {
+  margin-top: 0.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.weight-stat-sub.good {
+  color: var(--ok);
+}
+
+.weight-stat-sub.bad {
+  color: var(--error);
+}
+
+/* Weekly averages strip under the chart: one card per week, scrolls sideways. */
+.weekly-averages {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.weekly-averages-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.week-card {
+  flex: 1 0 7.4rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-card.current {
+  border-color: var(--accent);
+}
+
+.week-card-label,
+.week-card-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.week-card.current .week-card-label {
+  color: var(--accent);
+}
+
+.week-card-range {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.week-card-value {
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.week-card-sub.good {
+  color: var(--ok);
+}
+
+.week-card-sub.bad {
+  color: var(--error);
+}
+
 .weight-chart-svg {
   display: block;
   width: 100%;
@@ -664,6 +736,13 @@ button.danger {
   stroke-width: 1;
   stroke-dasharray: 2 4;
   opacity: 0.55;
+}
+
+.weight-chart-week {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
 }
 
 .weight-chart-axis {
