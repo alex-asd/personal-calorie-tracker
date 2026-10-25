@@ -4,6 +4,8 @@ import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
 import { formatLabel } from '../dates.js';
 import { useCategories, useCreateCategory } from '../hooks/useCategories.js';
+import { parseMacros } from '../macros.js';
+import MacroInput from './MacroInput.jsx';
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -86,6 +88,7 @@ export default function AddMealModal({ onClose, onAdded, date }) {
 
   async function submitNew(e) {
     e.preventDefault();
+    if (!newValid) return;
 
     let categoryId = null;
     if (saveToLibrary) {
@@ -106,10 +109,7 @@ export default function AddMealModal({ onClose, onAdded, date }) {
 
     addMutation.mutate({
       name,
-      calories: Number(calories),
-      protein: Number(protein),
-      carbs: carbs === '' ? null : Number(carbs),
-      fat: fat === '' ? null : Number(fat),
+      ...macros,
       save_to_library: saveToLibrary,
       ...(categoryId != null ? { category_id: categoryId } : {}),
       ...(date ? { date } : {}),
@@ -123,7 +123,8 @@ export default function AddMealModal({ onClose, onAdded, date }) {
     return String(s.category_id) === filter;
   });
 
-  const newValid = name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
+  const macros = parseMacros({ calories, protein, carbs, fat });
+  const newValid = name.trim() && macros;
   const submitting = addMutation.isPending || createCategory.isPending;
   const error = savedError?.message || addMutation.error?.message || createCategory.error?.message;
 
@@ -215,48 +216,10 @@ export default function AddMealModal({ onClose, onAdded, date }) {
               <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
             </label>
             <div className="form-grid">
-              <label>
-                <span>Calories</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={calories}
-                  onChange={(e) => setCalories(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                <span>Protein (g)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={protein}
-                  onChange={(e) => setProtein(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                <span>Carbs (g, optional)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={carbs}
-                  onChange={(e) => setCarbs(e.target.value)}
-                />
-              </label>
-              <label>
-                <span>Fat (g, optional)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={fat}
-                  onChange={(e) => setFat(e.target.value)}
-                />
-              </label>
+              <MacroInput label="Calories" value={calories} onChange={setCalories} required />
+              <MacroInput label="Protein (g)" value={protein} onChange={setProtein} required />
+              <MacroInput label="Carbs (g, optional)" value={carbs} onChange={setCarbs} />
+              <MacroInput label="Fat (g, optional)" value={fat} onChange={setFat} />
             </div>
             <label className="checkbox">
               <input

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api.js';
 import { queryKeys } from '../queryKeys.js';
+import { parseMacros } from '../macros.js';
+import MacroInput from './MacroInput.jsx';
 
 export default function MealEditor({ meal, onSave, onCancel }) {
   const queryClient = useQueryClient();
@@ -23,18 +25,13 @@ export default function MealEditor({ meal, onSave, onCancel }) {
     },
   });
 
-  const valid = name.trim() && Number(calories) >= 0 && Number(protein) >= 0;
+  const macros = parseMacros({ calories, protein, carbs, fat });
+  const valid = name.trim() && macros;
 
   function submit(e) {
     e.preventDefault();
     if (!valid) return;
-    saveMutation.mutate({
-      name,
-      calories: Number(calories),
-      protein: Number(protein),
-      carbs: carbs === '' ? null : Number(carbs),
-      fat: fat === '' ? null : Number(fat),
-    });
+    saveMutation.mutate({ name, ...macros });
   }
 
   const saving = saveMutation.isPending;
@@ -46,48 +43,10 @@ export default function MealEditor({ meal, onSave, onCancel }) {
         <input value={name} onChange={(e) => setName(e.target.value)} required />
       </label>
       <div className="form-grid">
-        <label>
-          <span>Calories</span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            required
-          />
-        </label>
-        <label>
-          <span>Protein (g)</span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={protein}
-            onChange={(e) => setProtein(e.target.value)}
-            required
-          />
-        </label>
-        <label>
-          <span>Carbs (g)</span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={carbs}
-            onChange={(e) => setCarbs(e.target.value)}
-          />
-        </label>
-        <label>
-          <span>Fat (g)</span>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            value={fat}
-            onChange={(e) => setFat(e.target.value)}
-          />
-        </label>
+        <MacroInput label="Calories" value={calories} onChange={setCalories} required />
+        <MacroInput label="Protein (g)" value={protein} onChange={setProtein} required />
+        <MacroInput label="Carbs (g)" value={carbs} onChange={setCarbs} />
+        <MacroInput label="Fat (g)" value={fat} onChange={setFat} />
       </div>
       {saveMutation.error && <p className="error">{saveMutation.error.message}</p>}
       <div className="row">
