@@ -7,9 +7,11 @@ import MealList from './MealList.jsx';
 import AddMealModal from './AddMealModal.jsx';
 import WeightEntry from './WeightEntry.jsx';
 import ActivityList from './ActivityList.jsx';
+import { useScrollLock } from '../hooks/useScrollLock.js';
 
 export default function DayDetailModal({ date, session, onClose }) {
   const [adding, setAdding] = useState(false);
+  useScrollLock();
 
   const mealsQuery = useQuery({
     queryKey: queryKeys.meals.list(date),
