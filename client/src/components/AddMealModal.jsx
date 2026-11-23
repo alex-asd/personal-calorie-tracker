@@ -6,6 +6,7 @@ import { formatLabel } from '../dates.js';
 import { useCategories, useCreateCategory } from '../hooks/useCategories.js';
 import { parseMacros } from '../macros.js';
 import MacroInput from './MacroInput.jsx';
+import { useScrollLock } from '../hooks/useScrollLock.js';
 
 function fmtMeta(m) {
   const parts = [`${Math.round(m.calories)} kcal`, `${Math.round(m.protein)}g protein`];
@@ -24,6 +25,7 @@ function invalidateMealsAndDays(queryClient) {
 
 export default function AddMealModal({ onClose, onAdded, date }) {
   const queryClient = useQueryClient();
+  useScrollLock();
   const [mode, setMode] = useState('pick');
 
   const [name, setName] = useState('');

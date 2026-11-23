@@ -508,6 +508,7 @@ button.danger {
   justify-content: center;
   padding: 2rem 1rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 50;
 }
 
@@ -520,6 +521,7 @@ button.danger {
   max-width: 520px;
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .modal-header {
